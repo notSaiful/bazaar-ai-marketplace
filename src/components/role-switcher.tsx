@@ -1,9 +1,8 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { Languages } from "lucide-react";
 
-export function RoleSwitcher({ role, sellerId, sellers, lang }: { role: string; sellerId: string; sellers: { id: string; name: string }[]; lang: string }) {
+export function RoleSwitcher({ role, sellerId, sellers, }: { role: string; sellerId: string; sellers: { id: string; name: string }[]; lang?: string }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const go = (qs: string, to?: string) =>
@@ -19,11 +18,11 @@ export function RoleSwitcher({ role, sellerId, sellers, lang }: { role: string; 
         id="role"
         value={role}
         onChange={(e) => go(`role=${e.target.value}`, e.target.value === "customer" ? "/" : e.target.value === "seller" ? "/seller" : "/admin")}
-        className="h-10 rounded-xl border border-line bg-surface px-2 text-sm font-medium"
+        className="h-10 rounded-xl border border-line bg-surface px-2 text-sm"
       >
-        <option value="customer">👤 Customer</option>
-        <option value="seller">🏪 Seller</option>
-        <option value="admin">🛡️ Admin</option>
+        <option value="customer">Shopping</option>
+        <option value="seller">Selling</option>
+        <option value="admin">Admin</option>
       </select>
       {role === "seller" && (
         <>
@@ -33,9 +32,7 @@ export function RoleSwitcher({ role, sellerId, sellers, lang }: { role: string; 
           </select>
         </>
       )}
-      <button aria-label={lang === "hi" ? "Switch to English" : "हिंदी में बदलें"} className="grid h-10 min-w-10 place-items-center rounded-xl border border-line bg-surface px-2 text-sm font-semibold hover:bg-surface2" onClick={() => go(`lang=${lang === "hi" ? "en" : "hi"}`)}>
-        <span className="flex items-center gap-1"><Languages className="size-4" />{lang === "hi" ? "EN" : "हि"}</span>
-      </button>
+
     </div>
   );
 }

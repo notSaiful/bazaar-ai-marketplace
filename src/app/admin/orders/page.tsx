@@ -1,34 +1,33 @@
 import { db, getSeller } from "@/lib/store";
-import { formatINR } from "@/lib/money";
 import { shortDate, shortId } from "@/lib/utils";
 import { refundAction } from "@/app/actions";
-import { Card, PageHeader, SplitBreakdown, StatusPill, btn } from "@/components/ui";
+import { SplitBreakdown, StatusPill, btn } from "@/components/ui";
 import { Flash } from "@/components/flash";
 
-export const metadata = { title: "All orders" };
+export const metadata = { title: "Orders" };
 export default async function AdminOrders({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
   const sp = await searchParams;
   const d = db();
   const orders = [...d.orders].filter((o) => o.status !== "pending_payment").sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return (
-    <div>
-      <PageHeader title="All orders" sub={`${orders.length} seller orders. Refunds reverse commission and payout in the ledger.`} />
+    <div className="space-y-6">
       <Flash sp={sp} />
-      <div className="space-y-3">
+      <div><h1 className="text-xl font-semibold">Orders</h1><p className="text-sm text-muted">A refund returns the money to the buyer and reverses the platform fee and the seller&apos;s payout.</p></div>
+      <ul className="space-y-4">
         {orders.map((o) => {
           const g = d.groups.find((x) => x.id === o.groupId)!;
           const refundable = ["placed", "accepted", "packed", "shipped", "delivered"].includes(o.status);
           return (
-            <Card key={o.id} className="space-y-2 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div><div className="font-semibold">#{shortId(o.id)} <span className="font-normal text-muted">· {shortDate(o.createdAt)} · {g.customerName} → {getSeller(o.sellerId)?.name} · {g.source}</span></div><div className="text-xs text-muted">{o.items.map((i) => `${i.qty}× ${i.title}`).join(", ")} · group #{shortId(g.id)} · {formatINR(g.total)} paid in total</div></div>
-                <div className="flex items-center gap-2"><StatusPill status={o.status} />{refundable && <form action={refundAction}><input type="hidden" name="id" value={o.id} /><button className={btn("outline", "sm")}>Refund</button></form>}</div>
+            <li key={o.id} className="space-y-2 rounded-2xl border border-line p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div><div className="font-medium">{o.items.map((i) => `${i.qty}× ${i.title}`).join(", ")}</div><div className="text-sm text-muted">#{shortId(o.id)} · {shortDate(o.createdAt)} · {g.customerName} → {getSeller(o.sellerId)?.name}</div></div>
+                <div className="flex items-center gap-3"><StatusPill status={o.status} />{refundable && <form action={refundAction}><input type="hidden" name="id" value={o.id} /><button className={btn("outline", "sm")}>Refund</button></form>}</div>
               </div>
-              <SplitBreakdown gross={o.gross} commission={o.commission} payout={o.payout} bps={o.items[0]?.commissionBps} refunded={o.refunded} compact />
-            </Card>
+              <SplitBreakdown inline gross={o.gross} commission={o.commission} payout={o.payout} bps={o.items[0]?.commissionBps} refunded={o.refunded} />
+            </li>
           );
         })}
-      </div>
+      </ul>
     </div>
   );
 }

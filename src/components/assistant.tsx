@@ -9,11 +9,11 @@ import { artUrl, cn } from "@/lib/utils";
 import type { AssistantReply } from "@/lib/assistant";
 
 interface Msg { from: "me" | "bot"; text: string; data?: AssistantReply }
-const PROMPTS = ["Diwali gift 2000 tak maa ke liye", "sardi ke liye shawl", "diya aur masala chai", "kya sasta earphones hai?"];
+const PROMPTS = ["Diwali gift 2000 tak maa ke liye", "sardi ke liye shawl", "diya aur masala chai"];
 
 export function Assistant() {
   const [open, setOpen] = useState(false);
-  const [msgs, setMsgs] = useState<Msg[]>([{ from: "bot", text: "Namaste! 🙏 I can search in English, Hindi or Hinglish and build a multi-seller cart for you. Prices and stock always come from the live catalogue." }]);
+  const [msgs, setMsgs] = useState<Msg[]>([{ from: "bot", text: "Namaste! Tell me what you need and I'll find it and build a cart. Prices and stock are always live." }]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const { lines, add, setOpen: openCart } = useCart();
@@ -37,12 +37,12 @@ export function Assistant() {
   return (
     <>
       <button onClick={() => setOpen(true)} aria-label="Open shopping assistant" className={cn("fixed bottom-4 right-4 z-40 flex h-14 items-center gap-2 rounded-full bg-accent px-5 text-accent-fg shadow-xl transition hover:scale-105", open && "hidden")}>
-        <Sparkles className="size-5" /><span className="hidden text-sm font-semibold sm:inline">Ask Bazaar AI</span>
+        <Sparkles className="size-5" /><span className="hidden text-sm font-semibold sm:inline">Ask for help</span>
       </button>
       {open && (
         <section role="dialog" aria-label="Shopping assistant" className="pop fixed inset-x-0 bottom-0 z-50 flex h-[85dvh] flex-col rounded-t-3xl border border-line bg-bg shadow-2xl sm:inset-x-auto sm:bottom-4 sm:right-4 sm:h-[620px] sm:w-[400px] sm:rounded-3xl">
           <header className="flex items-center justify-between border-b border-line px-4 py-3">
-            <div className="flex items-center gap-2"><span className="grid size-8 place-items-center rounded-full bg-accent-soft text-accent"><Bot className="size-4" /></span><div><div className="text-sm font-semibold">Bazaar AI assistant</div><div className="text-xs text-muted">Hinglish-aware · reads catalogue only</div></div></div>
+            <div className="flex items-center gap-2"><span className="grid size-8 place-items-center rounded-full bg-accent-soft text-accent"><Bot className="size-4" /></span><div><div className="text-sm font-semibold">Bazaar AI assistant</div><div className="text-xs text-muted">Hindi, English or Hinglish</div></div></div>
             <button aria-label="Close assistant" onClick={() => setOpen(false)} className="grid size-8 place-items-center rounded-lg hover:bg-surface2"><X className="size-4" /></button>
           </header>
           <div className="flex-1 space-y-3 overflow-y-auto p-4" aria-live="polite">

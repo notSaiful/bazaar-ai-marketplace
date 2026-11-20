@@ -11,7 +11,7 @@ export default async function Onboarding({ searchParams }: { searchParams: Promi
   const s = await getSession();
   const me = getSeller(s.sellerId)!;
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-xl space-y-6">
       <PageHeader title="Store profile & onboarding" sub="New stores stay pending until an admin approves them." />
       <Flash sp={sp} />
       <Card className="p-5">

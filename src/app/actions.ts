@@ -94,14 +94,14 @@ export async function setSellerStatusAction(f: FormData) {
 export async function setCommissionAction(f: FormData) {
   await requireRole("admin");
   const r = store.setCommission(s(f, "id"), Math.round(Number(s(f, "pct")) * 100), "admin");
-  if ("error" in r) back("/admin/commission", "err", r.error!);
-  back("/admin/commission", "msg", "New rate saved. It applies to future orders only; past orders keep their snapshotted rate.");
+  if ("error" in r) back("/admin/sellers", "err", r.error!);
+  back("/admin/sellers", "msg", "Rate saved for future orders. Past orders keep their rate.");
 }
 export async function setProductStatusAction(f: FormData) {
   await requireRole("admin");
   const r = store.setProductStatus(s(f, "id"), s(f, "status") as ProductStatus, s(f, "note"), "admin");
   revalidatePath("/", "layout");
-  const to = s(f, "_back") || "/admin/products";
+  const to = s(f, "_back") || "/admin";
   if ("error" in r) back(to, "err", r.error!);
   back(to, "msg", `Product ${s(f, "status")}.`);
 }
@@ -115,8 +115,8 @@ export async function refundAction(f: FormData) {
 export async function payoutAction(f: FormData) {
   await requireRole("admin");
   const r = store.runPayout(s(f, "id"), "admin");
-  if ("error" in r) back("/admin/payouts", "err", r.error!);
-  back("/admin/payouts", "msg", "Payout simulated (labelled as a simulated Route transfer) and posted to the ledger.");
+  if ("error" in r) back("/admin/ledger", "err", r.error!);
+  back("/admin/ledger", "msg", "Payout sent (simulated) and recorded in the ledger.");
 }
 export async function replayWebhookAction() {
   await requireRole("admin");

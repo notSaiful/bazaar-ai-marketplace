@@ -10,7 +10,7 @@ export function btn(variant: "primary" | "secondary" | "ghost" | "danger" | "out
     size === "sm" && "h-8 px-3 text-sm",
     size === "md" && "h-10 px-4 text-sm",
     size === "lg" && "h-12 px-6 text-base",
-    variant === "primary" && "bg-accent text-accent-fg hover:brightness-110 shadow-sm",
+    variant === "primary" && "bg-accent text-accent-fg hover:brightness-110",
     variant === "secondary" && "bg-surface2 text-fg hover:bg-line",
     variant === "outline" && "border border-line bg-surface text-fg hover:bg-surface2",
     variant === "ghost" && "text-fg hover:bg-surface2",
@@ -21,7 +21,7 @@ export function btn(variant: "primary" | "secondary" | "ghost" | "danger" | "out
 export const inputCls = "h-10 w-full rounded-xl border border-line bg-surface px-3 text-sm text-fg placeholder:text-muted focus-visible:outline-2";
 
 export function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cn("rounded-2xl border border-line bg-surface shadow-sm", className)}>{children}</div>;
+  return <div className={cn("rounded-2xl border border-line bg-surface", className)}>{children}</div>;
 }
 
 export function Badge({ children, tone = "neutral", className }: { children: ReactNode; tone?: "neutral" | "ok" | "warn" | "bad" | "accent"; className?: string }) {
@@ -77,9 +77,9 @@ export function Stat({ label, value, hint, tone }: { label: string; value: React
 
 export function PageHeader({ title, sub, action }: { title: string; sub?: string; action?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div className="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
         {sub && <p className="mt-1 text-sm text-muted">{sub}</p>}
       </div>
       {action}
@@ -92,8 +92,15 @@ export function Money({ p, className }: { p: Paise; className?: string }) {
 }
 
 /** The visible commission split shown on every order. */
-export function SplitBreakdown({ gross, commission, payout, bps, refunded, compact }: { gross: Paise; commission: Paise; payout: Paise; bps?: number; refunded?: Paise; compact?: boolean }) {
+export function SplitBreakdown({ gross, commission, payout, bps, refunded, compact, inline }: { gross: Paise; commission: Paise; payout: Paise; bps?: number; refunded?: Paise; compact?: boolean; inline?: boolean }) {
   const pct = gross ? (commission / gross) * 100 : 0;
+  if (inline)
+    return (
+      <p className="text-sm text-muted tabular-nums">
+        {formatINR(gross)} total · platform fee {formatINR(commission)}{bps !== undefined && ` (${bpsToPct(bps)})`} · <span className="font-medium text-fg">seller gets {formatINR(payout)}</span>
+        {!!refunded && <span className="text-bad"> · refunded</span>}
+      </p>
+    );
   return (
     <div className={cn("rounded-xl border border-line bg-surface2 p-3 text-sm", compact && "p-2 text-xs")}>
       <div className="mb-2 flex h-2 overflow-hidden rounded-full bg-line" role="img" aria-label={`Platform commission ${pct.toFixed(0)}% of order`}>

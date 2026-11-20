@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { Minus, Plus, ShoppingBag, Trash2, X, Truck } from "lucide-react";
+import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import { btn, ProductArt, EmptyState, Skeleton } from "./ui";
 import { formatINR } from "@/lib/money";
 import { artUrl, cn } from "@/lib/utils";
@@ -16,7 +16,7 @@ interface Ctx {
   clear: () => void;
   open: boolean;
   setOpen: (o: boolean) => void;
-  toast: string | null;
+  toast: null;
 }
 const CartCtx = createContext<Ctx | null>(null);
 export const useCart = () => {
@@ -28,7 +28,6 @@ export const useCart = () => {
 export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
   const [open, setOpen] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
   useEffect(() => {
     try { setLines(JSON.parse(localStorage.getItem("bazaar_cart") || "[]")); } catch {}
     const onStorage = () => { try { setLines(JSON.parse(localStorage.getItem("bazaar_cart") || "[]")); } catch {} };
@@ -43,13 +42,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("bazaar_cart", JSON.stringify(next));
       return next;
     });
-    setToast("Added to cart");
-    setTimeout(() => setToast(null), 1800);
+    setOpen(true);
   }, []);
   const setQty = useCallback((id: string, qty: number) => save(lines.map((l) => (l.productId === id ? { ...l, qty: Math.max(1, qty) } : l))), [lines, save]);
   const remove = useCallback((id: string) => save(lines.filter((l) => l.productId !== id)), [lines, save]);
   const clear = useCallback(() => save([]), [save]);
-  const value = useMemo(() => ({ lines, count: lines.reduce((a, l) => a + l.qty, 0), add, setQty, remove, clear, open, setOpen, toast }), [lines, add, setQty, remove, clear, open, toast]);
+  const value = useMemo(() => ({ lines, count: lines.reduce((a, l) => a + l.qty, 0), add, setQty, remove, clear, open, setOpen, toast: null }), [lines, add, setQty, remove, clear, open]);
   return <CartCtx.Provider value={value}>{children}</CartCtx.Provider>;
 }
 
@@ -87,7 +85,7 @@ export function CartLines({ compact = false }: { compact?: boolean }) {
         <section key={g.seller.id} aria-label={`Items from ${g.seller.name}`} className="rounded-xl border border-line">
           <header className="flex items-center justify-between border-b border-line px-3 py-2 text-sm">
             <span className="font-semibold">{g.seller.name} <span className="font-normal text-muted">· {g.seller.city}</span></span>
-            <span className="flex items-center gap-1 text-xs text-muted"><Truck className="size-3.5" /> by {g.eta}</span>
+            <span className="text-xs text-muted">arrives {g.eta}</span>
           </header>
           <ul className="divide-y divide-line">
             {g.lines.map((l) => (
@@ -110,7 +108,7 @@ export function CartLines({ compact = false }: { compact?: boolean }) {
               </li>
             ))}
           </ul>
-          <footer className="flex justify-between border-t border-line px-3 py-2 text-sm"><span className="text-muted">Subtotal · free delivery</span><span className="font-semibold tabular-nums">{formatINR(g.subtotal)}</span></footer>
+          
         </section>
       ))}
     </div>
@@ -128,7 +126,7 @@ export function CartButton() {
 }
 
 export function CartDrawer() {
-  const { open, setOpen, lines, toast } = useCart();
+  const { open, setOpen, lines } = useCart();
   const data = usePricedCart();
   useEffect(() => {
     if (!open) return;
@@ -139,20 +137,18 @@ export function CartDrawer() {
   }, [open, setOpen]);
   return (
     <>
-      {toast && <div role="status" className="pop fixed bottom-24 left-1/2 z-[70] -translate-x-1/2 rounded-full bg-fg px-4 py-2 text-sm text-bg shadow-lg">{toast}</div>}
-      {open && (
+            {open && (
         <div className="fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label="Shopping cart">
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
           <aside className="pop absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-bg shadow-2xl">
             <header className="flex items-center justify-between border-b border-line p-4">
-              <h2 className="text-lg font-semibold">Your cart</h2>
+              <h2 className="text-lg font-semibold">Cart</h2>
               <button aria-label="Close cart" onClick={() => setOpen(false)} className="grid size-9 place-items-center rounded-lg hover:bg-surface2"><X className="size-5" /></button>
             </header>
             <div className="flex-1 overflow-y-auto p-4"><CartLines compact /></div>
             {lines.length > 0 && data && data.groups.length > 0 && (
               <footer className="space-y-3 border-t border-line p-4">
-                <div className="flex justify-between text-base font-semibold"><span>Total · {data.groups.length} seller{data.groups.length > 1 ? "s" : ""}</span><span className="tabular-nums">{formatINR(data.total)}</span></div>
-                <p className="text-xs text-muted">One payment. We split it between sellers automatically.</p>
+                <div className="flex justify-between text-base font-semibold"><span>Total</span><span className="tabular-nums">{formatINR(data.total)}</span></div>
                 <Link href="/checkout" onClick={() => setOpen(false)} className={cn(btn("primary", "lg"), "w-full")}>Checkout</Link>
               </footer>
             )}
@@ -163,17 +159,12 @@ export function CartDrawer() {
   );
 }
 
-export function AddToCart({ id, stock, className, label = "Add to cart" }: { id: string; stock: number; className?: string; label?: string }) {
-  const { add, setOpen } = useCart();
-  return (
-    <button disabled={stock < 1} onClick={() => { add(id); }} className={cn(btn("primary"), className)} onDoubleClick={() => setOpen(true)}>
-      <ShoppingBag className="size-4" /> {stock < 1 ? "Out of stock" : label}
-    </button>
-  );
-}
-export function BuyNow({ id, stock, className }: { id: string; stock: number; className?: string }) {
+export function AddToCart({ id, stock, className, label = "Add to cart", compact }: { id: string; stock: number; className?: string; label?: string; compact?: boolean }) {
   const { add } = useCart();
-  return stock < 1 ? null : (
-    <Link href="/checkout" onClick={() => add(id)} className={cn(btn("outline"), className)}>Buy now</Link>
+  // One tap adds the item and opens the cart with a Checkout button.
+  return (
+    <button disabled={stock < 1} onClick={() => add(id)} aria-label={compact ? "Add to cart" : undefined} className={cn(btn(compact ? "outline" : "primary", compact ? "sm" : "md"), className)}>
+      {compact ? (stock < 1 ? "Sold out" : "Add") : stock < 1 ? "Out of stock" : label}
+    </button>
   );
 }

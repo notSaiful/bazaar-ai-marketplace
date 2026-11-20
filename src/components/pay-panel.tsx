@@ -1,55 +1,58 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CreditCard, Loader2, QrCode, ShieldCheck, TestTube } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useCart } from "./cart";
-import { Badge, Card, btn } from "./ui";
+import { btn } from "./ui";
 import { formatINR } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
-export function PayPanel({ groupId, total, sellers, expiresAt }: { groupId: string; total: number; sellers: { name: string; amount: number }[]; expiresAt: string }) {
+declare global { interface Window { Razorpay?: new (o: Record<string, unknown>) => { open: () => void } } }
+
+export function PayPanel({ groupId, total, sellers, razorpay }: { groupId: string; total: number; sellers: { name: string; amount: number }[]; razorpay?: { keyId: string; orderId: string } }) {
   const router = useRouter();
   const { clear } = useCart();
-  const [method, setMethod] = useState<"upi" | "card">("upi");
-  const [busy, setBusy] = useState<null | "success" | "failure">(null);
+  const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
 
+  const done = () => { clear(); router.push(`/orders/${groupId}?paid=1`); };
+
+  async function payReal() {
+    if (!razorpay) return;
+    await new Promise<void>((res) => {
+      if (window.Razorpay) return res();
+      const s = document.createElement("script");
+      s.src = "https://checkout.razorpay.com/v1/checkout.js";
+      s.onload = () => res();
+      document.body.appendChild(s);
+    });
+    new window.Razorpay!({
+      key: razorpay.keyId, order_id: razorpay.orderId, amount: total, currency: "INR", name: "Bazaar",
+      handler: async (r: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
+        const v = await fetch("/api/payments/verify", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ groupId, ...r }) });
+        if (v.ok) done(); else setFailed(true);
+      },
+      modal: { ondismiss: () => setBusy(false) },
+    }).open();
+  }
+
   async function pay(outcome: "success" | "failure") {
-    setBusy(outcome);
+    setBusy(true);
     setFailed(false);
-    await new Promise((r) => setTimeout(r, 900)); // feels like a real gateway round-trip
+    if (razorpay && outcome === "success") return payReal();
+    await new Promise((r) => setTimeout(r, 800)); // feels like a gateway round-trip
     const r = await fetch("/api/payments/mock", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ groupId, outcome }) });
     const j = await r.json();
-    setBusy(null);
-    if (outcome === "success" && r.ok && !j.error) { clear(); router.push(`/orders/${groupId}?paid=1`); }
-    else setFailed(true);
+    setBusy(false);
+    if (outcome === "success" && r.ok && !j.error) done(); else setFailed(true);
   }
   return (
-    <div className="mx-auto max-w-lg space-y-4">
-      <Card className="overflow-hidden">
-        <div className="flex items-center justify-between bg-[#0b2a4a] px-5 py-4 text-white">
-          <div><div className="text-xs opacity-70">Razorpay Checkout · Test mode</div><div className="text-lg font-semibold">Bazaar AI</div></div>
-          <div className="text-right"><div className="text-xs opacity-70">Amount</div><div className="text-xl font-bold tabular-nums">{formatINR(total)}</div></div>
-        </div>
-        <div className="space-y-4 p-5">
-          <div className="grid grid-cols-2 gap-2" role="tablist" aria-label="Payment method">
-            {([["upi", "UPI", QrCode], ["card", "Card", CreditCard]] as const).map(([k, l, I]) => (
-              <button key={k} role="tab" aria-selected={method === k} onClick={() => setMethod(k)} className={cn("flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-medium", method === k ? "border-accent bg-accent-soft text-accent" : "border-line")}><I className="size-4" />{l}</button>
-            ))}
-          </div>
-          {method === "upi" ? <div><label htmlFor="upi" className="mb-1 block text-sm font-medium">UPI ID</label><input id="upi" defaultValue="success@razorpay" className="h-10 w-full rounded-xl border border-line bg-surface px-3 text-sm" /></div> : (
-            <div className="space-y-3"><div><label htmlFor="cn" className="mb-1 block text-sm font-medium">Test card</label><input id="cn" defaultValue="4111 1111 1111 1111" className="h-10 w-full rounded-xl border border-line bg-surface px-3 text-sm" /></div><div className="grid grid-cols-2 gap-3"><input aria-label="Expiry" defaultValue="12/30" className="h-10 rounded-xl border border-line bg-surface px-3 text-sm" /><input aria-label="CVV" defaultValue="123" className="h-10 rounded-xl border border-line bg-surface px-3 text-sm" /></div></div>
-          )}
-          {failed && <p role="alert" className="rounded-lg bg-bad/15 px-3 py-2 text-sm text-bad">Payment failed. Your cart is safe and reserved stock was released. You can try again from checkout.</p>}
-          <button disabled={!!busy} onClick={() => pay("success")} className={cn(btn("primary", "lg"), "w-full")}>{busy === "success" ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />} Pay {formatINR(total)}</button>
-          <button disabled={!!busy} onClick={() => pay("failure")} className={cn(btn("ghost", "sm"), "w-full text-muted")}>{busy === "failure" ? <Loader2 className="size-4 animate-spin" /> : <TestTube className="size-4" />} Simulate a failed payment</button>
-        </div>
-      </Card>
-      <Card className="p-4 text-sm">
-        <div className="mb-2 flex items-center justify-between font-medium">How this payment is split <Badge tone="accent">simulated Route</Badge></div>
-        {sellers.map((s) => <div key={s.name} className="flex justify-between text-muted"><span>{s.name}</span><span className="tabular-nums">{formatINR(s.amount)}</span></div>)}
-        <p className="mt-2 text-xs text-muted">One payment, one order per seller. Reservation expires {new Date(expiresAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}. No real money moves in test mode.</p>
-      </Card>
+    <div className="mx-auto max-w-md space-y-6 text-center">
+      <div><div className="text-sm text-muted">You pay</div><div className="text-5xl font-semibold tabular-nums">{formatINR(total)}</div></div>
+      <ul className="space-y-1 text-sm text-muted">{sellers.map((s) => <li key={s.name} className="flex justify-between"><span>{s.name}</span><span className="tabular-nums">{formatINR(s.amount)}</span></li>)}</ul>
+      {failed && <p role="alert" className="rounded-lg bg-bad/10 px-3 py-2 text-sm text-bad">Payment failed. Your cart is safe, so you can try again.</p>}
+      <button disabled={busy} onClick={() => pay("success")} className={cn(btn("primary", "lg"), "w-full")}>{busy && <Loader2 className="size-4 animate-spin" />} Pay {formatINR(total)}</button>
+      <p className="text-xs text-muted">{razorpay ? "Razorpay test mode: UPI or card." : "Test payment, no real money moves."}{!razorpay && <> <button disabled={busy} onClick={() => pay("failure")} className="underline hover:text-fg">Simulate a failure</button></>}</p>
     </div>
   );
 }

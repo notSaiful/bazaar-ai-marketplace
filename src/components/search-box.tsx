@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Search, Sparkles } from "lucide-react";
+import { Search } from "lucide-react";
 import { formatINR } from "@/lib/money";
 import { artUrl } from "@/lib/utils";
 import { ProductArt } from "./ui";
@@ -32,20 +32,13 @@ export function SearchBox({ placeholder, initial = "", big = false }: { placehol
     <div ref={box} className="relative w-full">
       <form role="search" onSubmit={(e) => { e.preventDefault(); setOpen(false); router.push(`/search?q=${encodeURIComponent(q)}`); }}>
         <label htmlFor={big ? "hero-search" : "nav-search"} className="sr-only">Search products</label>
-        <div className={`flex items-center gap-2 rounded-2xl border border-line bg-surface px-3 shadow-sm focus-within:border-accent ${big ? "h-14" : "h-10"}`}>
+        <div className={`flex items-center gap-2 rounded-full border border-line bg-surface px-4 focus-within:border-accent ${big ? "h-14" : "h-10"}`}>
           <Search className="size-5 shrink-0 text-muted" />
           <input id={big ? "hero-search" : "nav-search"} value={q} onChange={(e) => { setQ(e.target.value); setOpen(true); }} onFocus={() => setOpen(true)} placeholder={placeholder} autoComplete="off" className="w-full bg-transparent text-sm outline-none placeholder:text-muted sm:text-base" />
         </div>
       </form>
       {open && r && q.trim().length >= 2 && (
         <div className="pop absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-line bg-surface shadow-xl">
-          {(r.parsed.intents.length > 0 || r.parsed.maxPrice) && (
-            <div className="flex flex-wrap items-center gap-1.5 border-b border-line bg-accent-soft px-3 py-2 text-xs text-accent">
-              <Sparkles className="size-3.5" /> Understood:
-              {r.parsed.intents.map((i) => <span key={i} className="rounded-full bg-surface px-2 py-0.5">{i}</span>)}
-              {r.parsed.maxPrice && <span className="rounded-full bg-surface px-2 py-0.5">under {formatINR(r.parsed.maxPrice)}</span>}
-            </div>
-          )}
           {r.results.length === 0 ? <p className="p-4 text-sm text-muted">No matches. Try “kurta”, “diya”, or “sardi ke liye shawl”.</p> : (
             <ul>
               {r.results.map((p) => (
@@ -59,7 +52,7 @@ export function SearchBox({ placeholder, initial = "", big = false }: { placehol
               ))}
             </ul>
           )}
-          <Link href={`/search?q=${encodeURIComponent(q)}`} onClick={() => setOpen(false)} className="flex justify-between border-t border-line px-3 py-2 text-xs text-muted hover:bg-surface2"><span>See all {r.total} results</span><span>{r.ms} ms · hybrid search</span></Link>
+          <Link href={`/search?q=${encodeURIComponent(q)}`} onClick={() => setOpen(false)} className="flex justify-between border-t border-line px-3 py-2 text-xs text-muted hover:bg-surface2"><span>See all {r.total} results</span></Link>
         </div>
       )}
     </div>

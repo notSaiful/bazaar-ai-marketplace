@@ -4,21 +4,13 @@ import { SwitchRole } from "@/components/gate";
 import { EmptyState } from "@/components/ui";
 
 const NAV = [
-  { href: "/admin", label: "Dashboard", icon: "📈" },
-  { href: "/admin/sellers", label: "Sellers", icon: "🏪" },
-  { href: "/admin/products", label: "Moderation", icon: "🛡️" },
-  { href: "/admin/orders", label: "Orders", icon: "🧾" },
-  { href: "/admin/commission", label: "Commission", icon: "％" },
-  { href: "/admin/payouts", label: "Payouts", icon: "💸" },
-  { href: "/admin/ledger", label: "Ledger", icon: "📒" },
+  { href: "/admin", label: "Overview" },
+  { href: "/admin/sellers", label: "Sellers" },
+  { href: "/admin/orders", label: "Orders" },
+  { href: "/admin/ledger", label: "Money" },
 ];
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const s = await getSession();
-  if (s.role !== "admin") return <EmptyState emoji="🛡️" title="Admin dashboard" hint="Switch to the admin role to approve sellers, moderate listings, manage commission and view the ledger (demo role switcher)." action={<SwitchRole role="admin" label="Continue as admin" />} />;
-  return (
-    <div className="grid gap-6 lg:grid-cols-[200px_1fr]">
-      <aside><PortalNav items={NAV} /></aside>
-      <div className="min-w-0">{children}</div>
-    </div>
-  );
+  if (s.role !== "admin") return <EmptyState emoji="🛡️" title="Admin" hint="Switch to the admin view to approve sellers, review orders and check the money." action={<SwitchRole role="admin" label="Switch to admin" />} />;
+  return <div className="space-y-8"><PortalNav items={NAV} /><div className="min-w-0">{children}</div></div>;
 }

@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Badge } from "./ui";
 
 /** Polls the stock endpoint (stands in for Supabase Realtime) so the badge follows seller edits within ~2s. */
 export function StockBadge({ id, initial, threshold = 5 }: { id: string; initial: number; threshold?: number }) {
@@ -11,7 +10,7 @@ export function StockBadge({ id, initial, threshold = 5 }: { id: string; initial
     const t = setInterval(tick, 2000);
     return () => { alive = false; clearInterval(t); };
   }, [id]);
-  if (stock < 1) return <Badge tone="bad">Out of stock</Badge>;
-  if (stock <= threshold) return <Badge tone="warn" className="animate-pulse">Only {stock} left</Badge>;
-  return <Badge tone="ok">In stock · {stock}</Badge>;
+  if (stock < 1) return <span className="text-sm text-bad">Out of stock</span>;
+  if (stock <= threshold) return <span className="text-sm text-warn">Only {stock} left</span>;
+  return <span className="text-sm text-ok">In stock</span>;
 }

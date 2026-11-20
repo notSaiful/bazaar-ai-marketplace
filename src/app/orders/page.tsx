@@ -12,9 +12,9 @@ export default async function Orders() {
   const groups = d.groups.filter((g) => g.customerId === s.customerId && g.status === "paid").sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return (
     <div>
-      <PageHeader title="My orders" sub="One payment, one order per seller." />
+      <PageHeader title="My orders" />
       {!groups.length ? <EmptyState emoji="📦" title="No orders yet" action={<Link href="/search" className={btn("primary")}>Start shopping</Link>} /> : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {groups.map((g) => {
             const os = d.orders.filter((o) => o.groupId === g.id);
             return (

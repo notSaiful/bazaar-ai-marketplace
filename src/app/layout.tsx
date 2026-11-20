@@ -4,6 +4,7 @@ import { Header } from "@/components/header";
 import { CartProvider, CartDrawer } from "@/components/cart";
 import { Assistant } from "@/components/assistant";
 import { getSession } from "@/lib/session";
+import { LangToggle } from "@/components/lang-toggle";
 
 export const dynamic = "force-dynamic";
 
@@ -24,8 +25,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[100] focus:rounded-lg focus:bg-accent focus:px-3 focus:py-2 focus:text-accent-fg">Skip to content</a>
         <CartProvider>
           <Header />
-          <main id="main" className="mx-auto min-h-[70dvh] max-w-7xl px-4 py-6">{children}</main>
-          <footer className="border-t border-line py-8 text-center text-xs text-muted">Bazaar AI prototype · test mode · synthetic data · payments are simulated unless Razorpay test keys are set</footer>
+          <main id="main" className="mx-auto min-h-[70dvh] max-w-6xl px-4 py-10">{children}</main>
+          <footer className="flex items-center justify-center gap-4 border-t border-line py-8 text-xs text-muted"><span>Bazaar · demo mode, test payments</span><LangToggle lang={s.lang} /><a className="hover:text-fg" href="/.well-known/ucp">For AI agents</a></footer>
           {s.role === "customer" && <Assistant />}
           <CartDrawer />
         </CartProvider>

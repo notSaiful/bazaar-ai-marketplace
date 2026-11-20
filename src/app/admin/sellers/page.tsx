@@ -1,35 +1,29 @@
 import { db } from "@/lib/store";
-import { bpsToPct } from "@/lib/money";
-import { Badge, Card, PageHeader, StatusPill } from "@/components/ui";
+import { setCommissionAction } from "@/app/actions";
+import { StatusPill, btn, inputCls } from "@/components/ui";
 import { SellerActions } from "@/components/admin-actions";
 import { Flash } from "@/components/flash";
-import { shortDate } from "@/lib/utils";
 
 export const metadata = { title: "Sellers" };
 export default async function Sellers({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
   const sp = await searchParams;
   const d = db();
+  const sellers = [...d.sellers].sort((a, b) => (a.status === "pending" ? -1 : 0) - (b.status === "pending" ? -1 : 0));
   return (
-    <div>
-      <PageHeader title="Sellers" sub="Approve, suspend or reinstate. Suspended sellers disappear from the storefront immediately." />
+    <div className="space-y-6">
       <Flash sp={sp} />
-      <Card className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-sm">
-          <thead className="border-b border-line text-left text-xs uppercase text-muted"><tr><th className="p-3">Store</th><th className="p-3">Status</th><th className="p-3">Products</th><th className="p-3">Fee</th><th className="p-3">Joined</th><th className="p-3" /></tr></thead>
-          <tbody className="divide-y divide-line">
-            {d.sellers.map((s) => (
-              <tr key={s.id}>
-                <td className="p-3"><div className="font-medium">{s.emoji} {s.name}</div><div className="text-xs text-muted">{s.city} · GSTIN {s.gstin ?? "n/a"} · bank ••••{s.bankLast4}</div></td>
-                <td className="p-3"><StatusPill status={s.status} /></td>
-                <td className="p-3">{d.products.filter((p) => p.sellerId === s.id && p.status === "live").length} live</td>
-                <td className="p-3"><Badge>{bpsToPct(s.commissionBps)}</Badge></td>
-                <td className="p-3 text-muted">{shortDate(s.joinedAt)}</td>
-                <td className="p-3"><SellerActions id={s.id} status={s.status} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
+      <div><h1 className="text-xl font-semibold">Sellers</h1><p className="text-sm text-muted">The commission rate only applies to future orders.</p></div>
+      <ul className="divide-y divide-line rounded-2xl border border-line">
+        {sellers.map((s) => (
+          <li key={s.id} className="flex flex-wrap items-center justify-between gap-4 p-5">
+            <div className="min-w-0"><div className="font-medium">{s.name} <StatusPill status={s.status} /></div><div className="text-sm text-muted">{s.city} · {d.products.filter((p) => p.sellerId === s.id && p.status === "live").length} live products</div></div>
+            <div className="flex flex-wrap items-center gap-4">
+              <form action={setCommissionAction} className="flex items-center gap-2"><input type="hidden" name="id" value={s.id} /><label className="text-sm text-muted" htmlFor={`c-${s.id}`}>Fee %</label><input id={`c-${s.id}`} name="pct" type="number" step="0.5" min={0} max={50} defaultValue={s.commissionBps / 100} className={`${inputCls} h-9 w-20`} /><button className={btn("ghost", "sm")}>Save</button></form>
+              <SellerActions id={s.id} status={s.status} />
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

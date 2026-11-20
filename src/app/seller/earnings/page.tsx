@@ -1,9 +1,8 @@
-import { CheckCircle2 } from "lucide-react";
 import { db, sellerEarnings } from "@/lib/store";
 import { getSession } from "@/lib/session";
 import { formatINR, formatINRExact, bpsToPct } from "@/lib/money";
 import { shortDate, shortId } from "@/lib/utils";
-import { Badge, Card, EmptyState, PageHeader, Stat, StatusPill } from "@/components/ui";
+import { Badge, Card, EmptyState, Stat, StatusPill } from "@/components/ui";
 
 export const metadata = { title: "Earnings" };
 export default async function Earnings() {
@@ -15,15 +14,13 @@ export default async function Earnings() {
   const ok = statement === e.ledgerBalance;
   const payouts = d.payouts.filter((p) => p.sellerId === s.sellerId);
   return (
-    <div className="space-y-6">
-      <PageHeader title="Earnings & payouts" sub="Gross, platform fee and your payout for every order line." />
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Ready for payout" value={formatINR(e.available)} tone="ok" hint="delivered orders" />
-        <Stat label="In escrow" value={formatINR(e.inEscrow)} hint="released after delivery" />
-        <Stat label="Paid out" value={formatINR(e.paidOut)} hint={`${payouts.length} payouts (simulated)`} />
-        <Stat label="Ledger balance" value={formatINRExact(e.ledgerBalance)} hint="what the platform owes you" />
+    <div className="space-y-8">
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Stat label="Ready for payout" value={formatINR(e.available)} tone="ok" />
+        <Stat label="Waiting for delivery" value={formatINR(e.inEscrow)} />
+        <Stat label="Paid out" value={formatINR(e.paidOut)} />
       </div>
-      <p className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm ${ok ? "bg-ok/10 text-ok" : "bg-bad/10 text-bad"}`}><CheckCircle2 className="size-4" /> Statement total {formatINRExact(statement)} {ok ? "equals" : "DOES NOT equal"} your ledger balance {formatINRExact(e.ledgerBalance)}.</p>
+      <p className={`text-sm ${ok ? "text-muted" : "text-bad"}`}>{ok ? "✓" : "⚠"} Statement matches your ledger balance ({formatINRExact(e.ledgerBalance)}). Payouts are released after delivery.</p>
       {!orders.length ? <EmptyState title="No earnings yet" /> : (
         <Card className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-sm">
