@@ -7,8 +7,8 @@ import type { OrderStatus } from "@/lib/types";
 export function btn(variant: "primary" | "secondary" | "ghost" | "danger" | "outline" = "primary", size: "sm" | "md" | "lg" = "md") {
   return cn(
     "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition active:scale-[.98] disabled:opacity-50 disabled:pointer-events-none cursor-pointer select-none",
-    size === "sm" && "h-8 px-3 text-sm",
-    size === "md" && "h-10 px-4 text-sm",
+    size === "sm" && "h-11 px-4 text-sm md:h-9 md:px-3",
+    size === "md" && "h-11 px-4 text-sm md:h-10",
     size === "lg" && "h-12 px-6 text-base",
     variant === "primary" && "bg-accent text-accent-fg hover:brightness-110",
     variant === "secondary" && "bg-surface2 text-fg hover:bg-line",
@@ -18,10 +18,10 @@ export function btn(variant: "primary" | "secondary" | "ghost" | "danger" | "out
   );
 }
 
-export const inputCls = "h-10 w-full rounded-xl border border-line bg-surface px-3 text-sm text-fg placeholder:text-muted focus-visible:outline-2";
+export const inputCls = "h-11 w-full md:h-10  rounded-xl border border-line bg-surface px-3 text-sm text-fg placeholder:text-muted focus-visible:outline-2";
 
-export function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cn("rounded-2xl border border-line bg-surface", className)}>{children}</div>;
+export function Card({ className, children, tabIndex }: { className?: string; children: ReactNode; tabIndex?: number }) {
+  return <div tabIndex={tabIndex} className={cn("rounded-2xl border border-line bg-surface", className)}>{children}</div>;
 }
 
 export function Badge({ children, tone = "neutral", className }: { children: ReactNode; tone?: "neutral" | "ok" | "warn" | "bad" | "accent"; className?: string }) {
@@ -58,7 +58,7 @@ export function EmptyState({ emoji = "🧺", title, hint, action }: { emoji?: st
   return (
     <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-line bg-surface px-6 py-14 text-center">
       <div className="text-5xl" aria-hidden>{emoji}</div>
-      <h3 className="text-lg font-semibold">{title}</h3>
+      <h2 className="text-lg font-semibold">{title}</h2>
       {hint && <p className="max-w-sm text-sm text-muted">{hint}</p>}
       {action}
     </div>
@@ -117,9 +117,9 @@ export function SplitBreakdown({ gross, commission, payout, bps, refunded, compa
   );
 }
 
-export function ProductArt({ src, alt, className }: { src: string; alt: string; className?: string }) {
+export function ProductArt({ src, alt, className, eager }: { src: string; alt: string; className?: string; eager?: boolean }) {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt={alt} loading="lazy" decoding="async" className={cn("aspect-square w-full object-cover", className)} />;
+  return <img src={src} alt={alt} loading={eager ? "eager" : "lazy"} decoding="async" className={cn("aspect-square w-full object-cover", className)} />;
 }
 
 export function TabLink({ href, active, children }: { href: string; active?: boolean; children: ReactNode }) {

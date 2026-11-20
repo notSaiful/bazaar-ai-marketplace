@@ -1,6 +1,6 @@
 # Eval & invariant report
 
-Generated 2026-11-20T10:53:38.009Z · 99 checks · **99 passed, 0 failed**
+Generated 2026-11-20T11:35:38.279Z · 114 checks · **114 passed, 0 failed**
 
 | Group | Passed | Total |
 |---|---|---|
@@ -13,8 +13,10 @@ Generated 2026-11-20T10:53:38.009Z · 99 checks · **99 passed, 0 failed**
 | agent | 12 | 12 |
 | injection | 6 | 6 |
 | refusal | 7 | 7 |
-| mcp | 8 | 8 |
+| mcp | 11 | 11 |
 | listing | 3 | 3 |
+| persistence | 9 | 9 |
+| relevance | 3 | 3 |
 
 All checks passed.
 
@@ -78,7 +80,7 @@ All checks passed.
 - ✅ [search] golden: “achaar”
 - ✅ [search] golden: “kurtaa”
 - ✅ [search] golden hit-rate ≥ 90% (18/18)
-- ✅ [search] p95 latency < 150 ms (NFR-03) (p95=1.62ms)
+- ✅ [search] p95 latency < 150 ms (NFR-03) (p95=1.72ms)
 - ✅ [search] price filter parsed from “under 500”
 - ✅ [search] flagged listing never appears in search
 - ✅ [agent] price/stock/budget accuracy: “diwali gift 2000 tak maa ke liye”
@@ -109,12 +111,27 @@ All checks passed.
 - ✅ [mcp] search_products returns live prices
 - ✅ [mcp] create_cart ignores agent-supplied price (server authority)
 - ✅ [mcp] checkout rejects a wrong cart token
-- ✅ [mcp] checkout returns a pay link for a human
+- ✅ [mcp] checkout returns a pay link for a human (signed claim in the URL)
 - ✅ [mcp] status is pending before the human pays
+- ✅ [mcp] tampered claim token is rejected
+- ✅ [mcp] opening the pay link claims the checkout in the human's session (stock reserved)
+- ✅ [mcp] claiming twice is idempotent
 - ✅ [mcp] status flips to paid after the human pays (AGT-03)
 - ✅ [mcp] status is scoped to the caller's token
 - ✅ [mcp] bad arguments are rejected by schema
 - ✅ [listing] 22/22 drafts validate against the schema on every run
 - ✅ [listing] tiny/blank photo prompts a retake
 - ✅ [listing] draft has Hindi + English copy and a price hint, but no final price field
+- ✅ [persistence] replaying the mutation log on a fresh seed reproduces the exact state (18 logged actions)
+- ✅ [persistence] log fits the signed cookie budget (954 bytes in 1 cookie(s))
+- ✅ [persistence] cookie round-trip returns the same log
+- ✅ [persistence] tampered cookie is rejected (ignored, never trusted)
+- ✅ [persistence] seed order ids are deterministic across cold starts (grp_seed_NN)
+- ✅ [persistence] checkout, pay, accept, refund, approve seller, publish all succeed in one session
+- ✅ [persistence] a different instance rebuilt from the cookie sees every change (paid, accepted, refunded, approved, published) ({"group":"paid","o0":"accepted","o1":"refunded","naya":"active","prod":true,"diff":0})
+- ✅ [persistence] a pristine session is unaffected by another visitor's changes
+- ✅ [relevance] “sasta kurta” returns only kurtas, cheapest first (sasta is a sort, not a keyword) (p_07,p_01)
+- ✅ [relevance] “diwali ke liye diya” returns diyas, not kurtas or sarees (p_09)
+- ✅ [relevance] multi-part request returns one item per part within budget (gift + festive + chai) (Soy Wax Scented Candles (3) | Brass Diya Set of 6 | Darjeeling First Flush Tea 250g)
 - ✅ [ledger] ledger reconciles to ₹0.00 after the whole suite (42 events)
+- ✅ [persistence] cart price API exposes no bank, GSTIN or commission fields (P1-4)

@@ -12,5 +12,5 @@ const NAV = [
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const s = await getSession();
   if (s.role !== "admin") return <EmptyState emoji="🛡️" title="Admin" hint="Switch to the admin view to approve sellers, review orders and check the money." action={<SwitchRole role="admin" label="Switch to admin" />} />;
-  return <div className="space-y-8"><PortalNav items={NAV} /><div className="min-w-0">{children}</div></div>;
+  return <div className="space-y-8"><h1 className="sr-only">Admin</h1><PortalNav items={NAV} /><div className="min-w-0">{children}</div></div>;
 }

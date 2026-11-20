@@ -7,8 +7,8 @@
  */
 import { PRODUCT_SEED, SELLER_SEED } from "./catalog";
 import { lineCommission, type Paise } from "./money";
+import { hid, requestStore, decodeLog, type LogEntry } from "./state";
 import type {
-  AgentCart,
   AuditEntry,
   CartLine,
   LedgerEntry,
@@ -31,42 +31,129 @@ interface DB {
   payouts: Payout[];
   audit: AuditEntry[];
   notifications: { id: string; sellerId: string; text: string; at: string }[];
-  agentCarts: AgentCart[];
   processedPayments: Set<string>;
-  rate: Map<string, number[]>;
   seq: number;
+  entrySeq: number;
 }
 
-const G = globalThis as unknown as { __bazaar?: DB };
+/**
+ * State model: every visitor's DB = deterministic seed + replay of their mutation log (see state.ts).
+ * `holder()` resolves the current request's state (or a global one outside a request, e.g. evals).
+ */
+interface Holder {
+  db: DB;
+  log: LogEntry[];
+  depth: number; // >0 while seeding/replaying/inside a logged call: nested calls are not logged
+  clockAt: number | null; // virtual clock so replay is deterministic
+  dirty: boolean;
+}
+const G = globalThis as unknown as { __bzSeed?: string; __bzGlobal?: Holder; __bzRate?: Map<string, number[]>; __bzAgent?: Record<string, { paidAt: string; total: number }> };
+const REQ = new WeakMap<object, Holder>();
+let override: Holder | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const FN: Record<string, (...a: any[]) => unknown> = {};
 
-const nowISO = () => new Date().toISOString();
-const uid = (d: DB, p: string) => `${p}_${(++d.seq).toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+const clock = () => (holder().clockAt ?? Date.now());
+const nowISO = () => new Date(clock()).toISOString();
+const uid = (d: DB, p: string) => `${p}_${(++d.seq).toString(36)}`;
+
+function emptyDB(): DB {
+  return { sellers: structuredClone(SELLER_SEED), products: structuredClone(PRODUCT_SEED), groups: [], orders: [], ledger: [], payouts: [], audit: [], notifications: [], processedPayments: new Set(), seq: 100, entrySeq: 0 };
+}
+
+function seededDB(): DB {
+  if (!G.__bzSeed) {
+    const h: Holder = { db: emptyDB(), log: [], depth: 1, clockAt: null, dirty: false };
+    const prev = override;
+    override = h;
+    try { seedOrders(h.db); } finally { override = prev; }
+    G.__bzSeed = JSON.stringify({ ...h.db, processedPayments: [...h.db.processedPayments] });
+  }
+  const o = JSON.parse(G.__bzSeed) as DB & { processedPayments: string[] };
+  return { ...o, processedPayments: new Set(o.processedPayments) };
+}
+
+function buildHolder(log: LogEntry[]): Holder {
+  const h: Holder = { db: seededDB(), log: [], depth: 1, clockAt: null, dirty: false };
+  const prev = override;
+  override = h; // replay entries resolve their state through this holder
+  try {
+    for (const [name, args, at] of log) {
+      try {
+        h.clockAt = at;
+        const r = FN[name]?.(...args);
+        if (r && typeof r === "object" && "error" in r) continue; // skip entries that no longer apply
+        h.log.push([name, args, at]);
+      } catch { /* skip a bad entry rather than losing the session */ }
+    }
+  } finally {
+    h.clockAt = null;
+    h.depth = 0;
+    override = prev;
+  }
+  return h;
+}
+
+export function holder(): Holder {
+  if (override) return override;
+  const rs = requestStore();
+  if (!rs) return (G.__bzGlobal ??= buildHolder([]));
+  let h = REQ.get(rs);
+  if (!h) {
+    h = buildHolder(decodeLog((n) => rs.cookies.get(n)?.value));
+    REQ.set(rs, h);
+  }
+  return h;
+}
 
 export function db(): DB {
-  if (!G.__bazaar) {
-    G.__bazaar = {
-      sellers: structuredClone(SELLER_SEED),
-      products: structuredClone(PRODUCT_SEED),
-      groups: [],
-      orders: [],
-      ledger: [],
-      payouts: [],
-      audit: [],
-      notifications: [],
-      agentCarts: [],
-      processedPayments: new Set(),
-      rate: new Map(),
-      seq: 100,
-    };
-    seedOrders(G.__bazaar);
-  }
-  expireStale(G.__bazaar);
-  return G.__bazaar;
+  const d = holder().db;
+  expireStale(d);
+  return d;
 }
 
+/** Runs fn against a throwaway state rebuilt from `log` (tests / diagnostics). */
+export function withLog<T>(log: LogEntry[], fn: () => T): T {
+  const prev = override;
+  override = buildHolder(log);
+  try { return fn(); } finally { override = prev; }
+}
+export const exportLog = (): LogEntry[] => holder().log.map((e) => [e[0], e[1], e[2]] as LogEntry);
+export const isDirty = () => holder().dirty;
+export const markClean = () => { holder().dirty = false; };
+export const stateSnapshot = () => { const d = holder().db; return JSON.stringify({ ...d, processedPayments: [...d.processedPayments] }); };
+
+/** Clears this visitor's log: state returns to the pristine seed. */
 export function resetDemo() {
-  G.__bazaar = undefined;
-  return db();
+  const h = holder();
+  h.db = seededDB();
+  h.log = [];
+  h.dirty = true;
+  return h.db;
+}
+
+function logged<A extends unknown[], R>(name: string, fn: (...a: A) => R): (...a: A) => R {
+  FN[name] = fn as (...a: unknown[]) => unknown;
+  return (...a: A): R => {
+    const h = holder();
+    if (h.depth > 0) return fn(...a);
+    const callAt = Date.now();
+    h.depth++;
+    h.clockAt = callAt;
+    try {
+      const r = fn(...a);
+      const ok = r && typeof r === "object" && !("error" in r) && !(r as { duplicate?: boolean }).duplicate;
+      if (ok) {
+        const args = name === "saveProduct" ? a.map((x: unknown, i: number) => (i === 1 && x && typeof x === "object" ? { ...(x as object), image: undefined } : x)) : a;
+        h.log.push([name, JSON.parse(JSON.stringify(args)) as unknown[], callAt]);
+        h.dirty = true;
+      }
+      return r;
+    } finally {
+      h.depth--;
+      h.clockAt = null;
+    }
+  };
 }
 
 /* ---------------- reads ---------------- */
@@ -138,7 +225,7 @@ export function priceCart(lines: CartLine[]): PricedCart {
 
 function etaFor(city: string) {
   const days = ["Jaipur", "Moradabad"].includes(city) ? 3 : 4;
-  const d = new Date(Date.now() + days * 864e5);
+  const d = new Date(clock() + days * 864e5);
   return d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
 }
 
@@ -159,9 +246,13 @@ export interface CheckoutInput {
   pincode: string;
   lines: CartLine[];
   source?: OrderGroup["source"];
+  /** Optional fixed id (seed data, agent checkout claims). Otherwise derived from the content. */
+  id?: string;
 }
 
-export function createCheckout(input: CheckoutInput, at = nowISO()): { group: OrderGroup; orders: Order[] } | { error: string } {
+export const checkoutId = (customerId: string, at: string, lines: CartLine[]) => hid("grp", customerId, at, lines);
+
+function createCheckout_(input: CheckoutInput, at = nowISO()): { group: OrderGroup; orders: Order[] } | { error: string } {
   const d = db();
   const pc = checkPincode(input.pincode);
   if (!pc.ok) return { error: pc.reason! };
@@ -174,7 +265,7 @@ export function createCheckout(input: CheckoutInput, at = nowISO()): { group: Or
   for (const g of priced.groups) for (const l of g.lines) l.product.stock -= l.qty;
 
   const group: OrderGroup = {
-    id: uid(d, "grp"),
+    id: input.id ?? checkoutId(input.customerId, at, input.lines),
     customerId: input.customerId,
     customerName: input.customerName.trim(),
     phone: input.phone,
@@ -185,7 +276,7 @@ export function createCheckout(input: CheckoutInput, at = nowISO()): { group: Or
     status: "pending_payment",
     source: input.source ?? "web",
     createdAt: at,
-    expiresAt: new Date(Date.now() + 10 * 60_000).toISOString(),
+    expiresAt: new Date(clock() + 10 * 60_000).toISOString(),
   };
   const orders: Order[] = priced.groups.map((g) => {
     const items = g.lines.map((l) => {
@@ -203,7 +294,7 @@ export function createCheckout(input: CheckoutInput, at = nowISO()): { group: Or
     const gross = items.reduce((a, i) => a + i.lineTotal, 0);
     const commission = items.reduce((a, i) => a + i.commission, 0);
     return {
-      id: uid(d, "ord"),
+      id: `ord_${group.id.slice(4)}_${priced.groups.indexOf(g)}`,
       groupId: group.id,
       sellerId: g.seller.id,
       status: "pending_payment" as OrderStatus,
@@ -223,7 +314,7 @@ export function createCheckout(input: CheckoutInput, at = nowISO()): { group: Or
 }
 
 function expireStale(d: DB) {
-  const t = Date.now();
+  const t = clock();
   for (const g of d.groups) if (g.status === "pending_payment" && new Date(g.expiresAt).getTime() < t) releaseGroup(d, g, "expired");
 }
 
@@ -240,7 +331,7 @@ function releaseGroup(d: DB, g: OrderGroup, status: "failed" | "expired") {
   }
 }
 
-export function failPayment(groupId: string) {
+function failPayment_(groupId: string) {
   const d = db();
   const g = d.groups.find((x) => x.id === groupId);
   if (!g) return { error: "Order not found" };
@@ -248,13 +339,12 @@ export function failPayment(groupId: string) {
   return { ok: true };
 }
 
-let entrySeq = 0;
 function post(d: DB, e: Omit<LedgerEntry, "id">) {
-  d.ledger.push({ id: `le_${++entrySeq}`, ...e });
+  d.ledger.push({ id: `le_${++d.entrySeq}`, ...e });
 }
 
 /** Idempotent: a replayed paymentId never creates a second capture. */
-export function capturePayment(groupId: string, paymentId: string, at = nowISO(), via = "razorpay_test") {
+function capturePayment_(groupId: string, paymentId: string, at = nowISO(), via = "razorpay_test") {
   const d = db();
   if (d.processedPayments.has(paymentId)) return { ok: true as const, duplicate: true as const };
   const g = d.groups.find((x) => x.id === groupId);
@@ -263,6 +353,7 @@ export function capturePayment(groupId: string, paymentId: string, at = nowISO()
   d.processedPayments.add(paymentId);
   g.status = "paid";
   g.paymentId = paymentId;
+  if (g.source === "agent") (G.__bzAgent ??= {})[g.id] = { paidAt: at, total: g.total }; // best-effort, instance-local
   for (const o of d.orders.filter((o) => o.groupId === g.id)) {
     o.status = "placed";
     o.tracking.push({ status: "placed", at, note: `Payment captured (${via})` });
@@ -285,7 +376,7 @@ export const NEXT: Record<string, OrderStatus[]> = {
   shipped: ["delivered"],
 };
 
-export function advanceOrder(orderId: string, to: OrderStatus, sellerId: string | null, at = nowISO()) {
+function advanceOrder_(orderId: string, to: OrderStatus, sellerId: string | null, at = nowISO()) {
   const d = db();
   const o = d.orders.find((x) => x.id === orderId);
   if (!o) return { error: "Order not found" };
@@ -296,7 +387,7 @@ export function advanceOrder(orderId: string, to: OrderStatus, sellerId: string 
   return { ok: true };
 }
 
-export function refundOrder(orderId: string, actor: string, at = nowISO()) {
+function refundOrder_(orderId: string, actor: string, at = nowISO()) {
   const d = db();
   const o = d.orders.find((x) => x.id === orderId);
   if (!o) return { error: "Order not found" };
@@ -341,19 +432,20 @@ export function sellerEarnings(sellerId: string) {
   };
 }
 
-export function runPayout(sellerId: string, actor: string, at = nowISO()) {
+function runPayout_(sellerId: string, actor: string, at = nowISO()) {
   const d = db();
   const s = getSeller(sellerId);
   if (!s) return { error: "Seller not found" };
   const eligible = d.orders.filter((o) => o.sellerId === sellerId && o.status === "delivered" && !o.settled);
   const amount = eligible.reduce((a, o) => a + o.payout, 0);
   if (amount <= 0) return { error: "Nothing eligible to pay out" };
-  const eventId = `evt_payout_${uid(d, "po")}`;
+  const poId = uid(d, "po");
+  const eventId = `evt_payout_${poId}`;
   const memo = `Payout to ${s.name} (simulated Route transfer)`;
   post(d, { eventId, eventType: "payout", account: `seller_payable:${sellerId}`, debit: amount, credit: 0, sellerId, at, memo });
   post(d, { eventId, eventType: "payout", account: "bank_settlement", debit: 0, credit: amount, sellerId, at, memo });
   eligible.forEach((o) => (o.settled = true));
-  d.payouts.push({ id: uid(d, "po"), sellerId, amount, status: "paid", createdAt: at, mode: "simulated_route_transfer" });
+  d.payouts.push({ id: poId, sellerId, amount, status: "paid", createdAt: at, mode: "simulated_route_transfer" });
   logAudit(actor, "run_payout", sellerId);
   return { ok: true, amount };
 }
@@ -393,7 +485,7 @@ export function analytics() {
   const commission = d.ledger.filter((e) => e.account === "platform_commission").reduce((a, e) => a + e.credit - e.debit, 0);
 
   const days: { day: string; gmv: number; commission: number; orders: number }[] = [];
-  for (let i = 13; i >= 0; i--) days.push({ day: new Date(Date.now() - i * 864e5).toISOString().slice(0, 10), gmv: 0, commission: 0, orders: 0 });
+  for (let i = 13; i >= 0; i--) days.push({ day: new Date(clock() - i * 864e5).toISOString().slice(0, 10), gmv: 0, commission: 0, orders: 0 });
   for (const o of d.orders) {
     if (NOT_SOLD.includes(o.status)) continue;
     const day = days.find((x) => x.day === o.createdAt.slice(0, 10));
@@ -435,7 +527,7 @@ export function analytics() {
 export function sellerSeries(sellerId: string) {
   const d = db();
   const days: { day: string; value: number }[] = [];
-  for (let i = 6; i >= 0; i--) days.push({ day: new Date(Date.now() - i * 864e5).toISOString().slice(0, 10), value: 0 });
+  for (let i = 6; i >= 0; i--) days.push({ day: new Date(clock() - i * 864e5).toISOString().slice(0, 10), value: 0 });
   for (const o of d.orders.filter((o) => o.sellerId === sellerId && ![...NOT_SOLD, "refunded"].includes(o.status))) {
     const day = days.find((x) => x.day === o.createdAt.slice(0, 10));
     if (day) day.value += o.gross;
@@ -446,11 +538,11 @@ export function sellerSeries(sellerId: string) {
 /* ---------------- seller & admin mutations ---------------- */
 
 export function logAudit(actor: string, action: string, target: string) {
-  const d = G.__bazaar!;
+  const d = holder().db;
   d.audit.unshift({ id: uid(d, "au"), actor, action, target, at: nowISO() });
 }
 
-export function registerSeller(input: { name: string; tagline: string; city: string; bankLast4: string; gstin?: string }) {
+function registerSeller_(input: { name: string; tagline: string; city: string; bankLast4: string; gstin?: string }) {
   const d = db();
   const slug = input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "store";
   const s: Seller = {
@@ -460,7 +552,7 @@ export function registerSeller(input: { name: string; tagline: string; city: str
     tagline: input.tagline || "New on Bazaar AI",
     city: input.city,
     emoji: "🏪",
-    hue: Math.floor(Math.random() * 360),
+    hue: parseInt(hid("h", input.name).slice(2, 6), 16) % 360,
     status: "pending",
     commissionBps: 1000,
     bankLast4: input.bankLast4,
@@ -500,7 +592,7 @@ export function moderate(p: { title: string; description: string; price: Paise; 
   return undefined;
 }
 
-export function saveProduct(sellerId: string, input: ProductInput) {
+function saveProduct_(sellerId: string, input: ProductInput) {
   const d = db();
   const s = getSeller(sellerId);
   if (!s) return { error: "Seller not found" };
@@ -530,7 +622,7 @@ export function saveProduct(sellerId: string, input: ProductInput) {
   return { ok: true as const, product: p, flagged: !!flag };
 }
 
-export function setStock(sellerId: string, productId: string, stock: number) {
+function setStock_(sellerId: string, productId: string, stock: number) {
   const p = getProduct(productId);
   if (!p || p.sellerId !== sellerId) return { error: "Not your product" };
   if (!Number.isInteger(stock) || stock < 0) return { error: "Stock cannot go below zero" };
@@ -539,14 +631,14 @@ export function setStock(sellerId: string, productId: string, stock: number) {
   return { ok: true };
 }
 
-export function archiveProduct(sellerId: string, productId: string) {
+function archiveProduct_(sellerId: string, productId: string) {
   const p = getProduct(productId);
   if (!p || p.sellerId !== sellerId) return { error: "Not your product" };
   p.status = "archived";
   return { ok: true };
 }
 
-export function setSellerStatus(id: string, status: SellerStatus, actor: string) {
+function setSellerStatus_(id: string, status: SellerStatus, actor: string) {
   const s = getSeller(id);
   if (!s) return { error: "Seller not found" };
   s.status = status;
@@ -554,7 +646,7 @@ export function setSellerStatus(id: string, status: SellerStatus, actor: string)
   return { ok: true };
 }
 
-export function setCommission(id: string, bps: number, actor: string) {
+function setCommission_(id: string, bps: number, actor: string) {
   const s = getSeller(id);
   if (!s) return { error: "Seller not found" };
   if (!Number.isInteger(bps) || bps < 0 || bps > 5000) return { error: "Rate must be between 0% and 50%" };
@@ -563,7 +655,7 @@ export function setCommission(id: string, bps: number, actor: string) {
   return { ok: true };
 }
 
-export function setProductStatus(id: string, status: ProductStatus, note: string, actor: string) {
+function setProductStatus_(id: string, status: ProductStatus, note: string, actor: string) {
   const p = getProduct(id);
   if (!p) return { error: "Product not found" };
   p.status = status;
@@ -583,37 +675,30 @@ export function anomalies() {
     for (const r of p.reviews) if (INJECTION.test(r.text)) out.push({ id: `r_${p.id}`, kind: "review", target: p.title, productId: p.id, sellerId: p.sellerId, reason: `Review by ${r.author} contains instructions aimed at AI agents.` });
   }
   const byCust = new Map<string, number>();
-  for (const g of d.groups) if (g.status === "paid" && Date.now() - new Date(g.createdAt).getTime() < 2 * 864e5) byCust.set(g.customerId, (byCust.get(g.customerId) ?? 0) + 1);
+  for (const g of d.groups) if (g.status === "paid" && clock() - new Date(g.createdAt).getTime() < 2 * 864e5) byCust.set(g.customerId, (byCust.get(g.customerId) ?? 0) + 1);
   for (const [c, n] of byCust) if (n >= 4) out.push({ id: `c_${c}`, kind: "buyer", target: c, reason: `${n} paid orders in 48 hours (velocity check).` });
   return out;
 }
 
-/* ---------------- rate limit & agent carts ---------------- */
 
+/** Per-instance, best-effort rate limit (abuse protection, not state). */
 export function rateLimit(key: string, limit: number, windowMs = 60_000) {
-  const d = db();
+  const m = (G.__bzRate ??= new Map<string, number[]>());
   const t = Date.now();
-  const hits = (d.rate.get(key) ?? []).filter((x) => t - x < windowMs);
-  if (hits.length >= limit) {
-    d.rate.set(key, hits);
-    return false;
-  }
+  const hits = (m.get(key) ?? []).filter((x) => t - x < windowMs);
+  if (hits.length >= limit) { m.set(key, hits); return false; }
   hits.push(t);
-  d.rate.set(key, hits);
+  m.set(key, hits);
   return true;
 }
 
-export function createAgentCart(lines: CartLine[]) {
-  const d = db();
-  const c: AgentCart = { id: uid(d, "cart"), token: Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2), lines, createdAt: nowISO() };
-  d.agentCarts.push(c);
-  return c;
-}
+export const agentPaid = (groupId: string) => G.__bzAgent?.[groupId];
 
 /* ---------------- demo seed ---------------- */
 
 function seedOrders(d: DB) {
-  const T = (daysAgo: number, h = 10) => new Date(Date.now() - daysAgo * 864e5 + (h - 12) * 36e5).toISOString();
+  const base = Math.floor(Date.now() / 864e5) * 864e5 + 12 * 36e5; // today, 12:00 UTC: stable for a whole day
+  const T = (daysAgo: number, h = 10) => new Date(base - daysAgo * 864e5 + (h - 12) * 36e5).toISOString();
   const custs: Record<string, [string, string, string]> = {
     cust_demo: ["Aarav Sharma", "Pune", "411001"],
     c2: ["Priya Nair", "Kochi", "682001"],
@@ -646,7 +731,7 @@ function seedOrders(d: DB) {
     const [name, city, pin] = custs[cid];
     const at = T(ago);
     const r = createCheckout(
-      { customerId: cid, customerName: name, phone: "98xxxxxx" + String(10 + i), address: `${12 + i}, MG Road`, city, pincode: pin, lines: lines.map(([productId, qty]) => ({ productId, qty })), source: i % 5 === 3 ? "assistant" : "web" },
+      { customerId: cid, customerName: name, phone: "98xxxxxx" + String(10 + i), address: `${12 + i}, MG Road`, city, pincode: pin, lines: lines.map(([productId, qty]) => ({ productId, qty })), source: i % 5 === 3 ? "assistant" : "web", id: `grp_seed_${String(i + 1).padStart(2, "0")}` },
       at,
     );
     if ("error" in r) return;
@@ -671,3 +756,18 @@ function seedOrders(d: DB) {
   d.audit = [];
   d.notifications = [];
 }
+
+/* ---------------- logged (persisted) mutations ---------------- */
+export const createCheckout = logged("createCheckout", createCheckout_);
+export const failPayment = logged("failPayment", failPayment_);
+export const capturePayment = logged("capturePayment", capturePayment_);
+export const advanceOrder = logged("advanceOrder", advanceOrder_);
+export const refundOrder = logged("refundOrder", refundOrder_);
+export const runPayout = logged("runPayout", runPayout_);
+export const registerSeller = logged("registerSeller", registerSeller_);
+export const saveProduct = logged("saveProduct", saveProduct_);
+export const setStock = logged("setStock", setStock_);
+export const archiveProduct = logged("archiveProduct", archiveProduct_);
+export const setSellerStatus = logged("setSellerStatus", setSellerStatus_);
+export const setCommission = logged("setCommission", setCommission_);
+export const setProductStatus = logged("setProductStatus", setProductStatus_);

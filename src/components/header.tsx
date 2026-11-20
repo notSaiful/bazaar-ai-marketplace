@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Package } from "lucide-react";
+import { AssistantTrigger } from "./assistant-trigger";
 import { getSession } from "@/lib/session";
 import { db } from "@/lib/store";
 import { t } from "@/lib/i18n";
@@ -13,7 +15,7 @@ export async function Header() {
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-bg/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
-        <Link href="/" className="text-lg font-semibold tracking-tight" aria-label="Bazaar AI home">Bazaar<span className="text-accent">.</span></Link>
+        <Link href="/" className="text-lg font-semibold tracking-tight" aria-label="Bazaar home">Bazaar<span className="text-accent">.</span></Link>
         {s.role === "customer" ? (
           <HeaderSearch placeholder={t("search_ph", s.lang)} />
         ) : (
@@ -23,7 +25,13 @@ export async function Header() {
           </nav>
         )}
         <div className="ml-auto flex items-center gap-2">
-          {s.role === "customer" && <Link href="/orders" className="hidden px-2 text-sm text-muted hover:text-fg sm:block">{t("orders", s.lang)}</Link>}
+          {s.role === "customer" && (
+            <>
+              <Link href="/orders" className="hidden px-2 text-sm text-muted hover:text-fg sm:block">{t("orders", s.lang)}</Link>
+              <Link href="/orders" aria-label="My orders" className="grid size-11 place-items-center rounded-xl border border-line bg-surface hover:bg-surface2 sm:hidden"><Package className="size-5" /></Link>
+              <AssistantTrigger />
+            </>
+          )}
           <RoleSwitcher role={s.role} sellerId={s.sellerId} sellers={sellers} lang={s.lang} />
           <ThemeToggle />
           {s.role === "customer" && <CartButton />}

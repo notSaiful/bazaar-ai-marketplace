@@ -2,7 +2,7 @@ import Link from "next/link";
 import { analytics, anomalies, db, reconciliation } from "@/lib/store";
 import { formatINR, formatINRExact } from "@/lib/money";
 import { shortDate } from "@/lib/utils";
-import { resetDemoAction } from "@/app/actions";
+import { ResetButton } from "@/components/reset-button";
 import { AreaChart, HBars } from "@/components/charts";
 import { SellerActions, ProductActions } from "@/components/admin-actions";
 import { Copilot } from "@/components/copilot";
@@ -39,7 +39,8 @@ export default async function Admin({ searchParams }: { searchParams: Promise<Re
       <details className="rounded-2xl border border-line p-5"><summary className="cursor-pointer font-medium">Ask a question about the numbers</summary><div className="mt-4"><Copilot /></div></details>
       <footer className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted">
         <Link href="/admin/ledger">Books balance: difference {formatINRExact(rec.diff)}</Link>
-        <form action={resetDemoAction}><button className="underline hover:text-fg">Reset demo data</button></form>
+        <span>Demo data is private to your browser</span>
+        <ResetButton />
       </footer>
     </div>
   );

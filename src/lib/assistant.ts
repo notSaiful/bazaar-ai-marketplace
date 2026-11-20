@@ -72,7 +72,7 @@ export function assistantRespond(message: string, cart: CartLine[] = []): Assist
 
   // multi-topic: split "diya aur mithai", "kurta and jhumka"
   const budget = parsed.maxPrice;
-  const segments = msg.split(/\s+(?:aur|and|\+|plus|&)\s+|,/i).map((s) => s.trim()).filter(Boolean);
+  const segments = msg.split(/\s+(?:aur|and|bhi|\+|plus|&)\s+|\s+bhi\b|,/i).map((s) => s.trim()).filter((s) => parseQuery(s).tokens.length > 0 || parseQuery(s).intents.length > 0);
   const picks: { p: Product; why: string[] }[] = [];
   const used = new Set<string>();
 
@@ -91,11 +91,14 @@ export function assistantRespond(message: string, cart: CartLine[] = []): Assist
 
   const wantsBundle = /(gift|bundle|combo|hamper|suggest|recommend)/i.test(msg) || segments.length > 1;
   if (segments.length > 1) {
+    // Every part of the request gets one item; the budget is shared fairly (unspent money carries forward).
     let remaining = budget;
-    for (const seg of segments) {
-      const got = gather(seg + (budget ? "" : ""), 1, remaining);
+    segments.forEach((seg, i) => {
+      const share = remaining === undefined ? undefined : Math.floor(remaining / (segments.length - i));
+      let got = gather(seg, 1, share);
+      if (!got.length && remaining !== undefined) got = gather(seg, 1, remaining);
       for (const g of got) { picks.push(g); used.add(g.p.id); if (remaining !== undefined) remaining -= g.p.price; }
-    }
+    });
   } else if (wantsBundle) {
     let remaining = budget;
     const cands = gather(msg, 8, budget);

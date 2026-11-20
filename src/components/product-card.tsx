@@ -6,12 +6,12 @@ import { artUrl } from "@/lib/utils";
 import { AddToCart } from "./cart";
 import { ProductArt } from "./ui";
 
-export function ProductCard({ p, lang = "en", why }: { p: Product; lang?: "en" | "hi"; why?: string[] }) {
+export function ProductCard({ p, lang = "en", why, eager }: { p: Product; lang?: "en" | "hi"; why?: string[]; eager?: boolean }) {
   const seller = getSeller(p.sellerId);
   return (
     <article className="group flex flex-col gap-3">
-      <Link href={`/product/${p.id}`} className="relative block overflow-hidden rounded-2xl border border-line" aria-label={p.title}>
-        <ProductArt src={artUrl(p)} alt={p.title} className="transition duration-300 group-hover:scale-105" />
+      <Link href={`/product/${p.id}`} className="relative block overflow-hidden rounded-2xl border border-line">
+        <ProductArt eager={eager} src={artUrl(p)} alt={p.title} className="transition duration-300 group-hover:scale-105" />
         {p.stock > 0 && p.stock <= 5 && <span className="absolute left-2 top-2 rounded-full bg-surface/90 px-2 py-0.5 text-xs text-warn">Only {p.stock} left</span>}
         {p.stock < 1 && <span className="absolute left-2 top-2 rounded-full bg-surface/90 px-2 py-0.5 text-xs text-bad">Sold out</span>}
       </Link>

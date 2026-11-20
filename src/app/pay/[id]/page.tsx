@@ -6,10 +6,15 @@ import { PayPanel } from "@/components/pay-panel";
 import { EmptyState, PageHeader, btn } from "@/components/ui";
 
 export const metadata = { title: "Pay" };
-export default async function PayPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PayPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ c?: string }> }) {
   const { id } = await params;
   const g = db().groups.find((x) => x.id === id);
-  if (!g) notFound();
+  if (!g) {
+    // Agent pay links carry a signed claim; adopt it into this visitor's session via the claim route.
+    const c = (await searchParams).c;
+    if (c) redirect(`/api/claim?c=${encodeURIComponent(c)}`);
+    notFound();
+  }
   if (g.status === "paid") redirect(`/orders/${id}`);
   if (g.status !== "pending_payment")
     return <EmptyState emoji="⏱️" title={g.status === "expired" ? "Payment window expired" : "Payment didn't go through"} hint="Your cart is saved. Start again from checkout." action={<Link href="/checkout" className={btn("primary")}>Back to checkout</Link>} />;

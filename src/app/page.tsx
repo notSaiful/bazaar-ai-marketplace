@@ -21,7 +21,7 @@ export default async function Home() {
       </section>
       <section aria-labelledby="pop">
         <div className="mb-6 flex items-baseline justify-between"><h2 id="pop" className="text-xl font-semibold">{t("featured", s.lang)}</h2><Link href="/search" className="text-sm text-accent">View all</Link></div>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">{popular.map((p) => <ProductCard key={p.id} p={p} lang={s.lang} />)}</div>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">{popular.map((p, i) => <ProductCard key={p.id} p={p} lang={s.lang} eager={i < 4} />)}</div>
       </section>
     </div>
   );

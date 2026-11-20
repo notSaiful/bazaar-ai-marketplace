@@ -17,7 +17,7 @@ export function SearchBox({ placeholder, initial = "", big = false }: { placehol
   const box = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (q.trim().length < 2) { setR(null); return; }
+    if (q.trim().length < 2) return;
     const ctl = new AbortController();
     const t = setTimeout(() => fetch(`/api/search?q=${encodeURIComponent(q)}&limit=5`, { signal: ctl.signal }).then((x) => x.json()).then(setR).catch(() => {}), 120);
     return () => { clearTimeout(t); ctl.abort(); };
@@ -32,7 +32,7 @@ export function SearchBox({ placeholder, initial = "", big = false }: { placehol
     <div ref={box} className="relative w-full">
       <form role="search" onSubmit={(e) => { e.preventDefault(); setOpen(false); router.push(`/search?q=${encodeURIComponent(q)}`); }}>
         <label htmlFor={big ? "hero-search" : "nav-search"} className="sr-only">Search products</label>
-        <div className={`flex items-center gap-2 rounded-full border border-line bg-surface px-4 focus-within:border-accent ${big ? "h-14" : "h-10"}`}>
+        <div className={`flex items-center gap-2 rounded-full border border-line bg-surface px-4 focus-within:border-accent ${big ? "h-14" : "h-11"}`}>
           <Search className="size-5 shrink-0 text-muted" />
           <input id={big ? "hero-search" : "nav-search"} value={q} onChange={(e) => { setQ(e.target.value); setOpen(true); }} onFocus={() => setOpen(true)} placeholder={placeholder} autoComplete="off" className="w-full bg-transparent text-sm outline-none placeholder:text-muted sm:text-base" />
         </div>

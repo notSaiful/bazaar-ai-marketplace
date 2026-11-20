@@ -4,3 +4,9 @@
 - **Decisions made explicitly**: local-first data layer behind Supabase-shaped schema; ledger as source of truth; AI is proposal-only; assistant is deterministic (tools read DB, replies are templated from tool results) so price accuracy is provable.
 - **Caught by the eval suite during the build**: golden-set expectations with wrong product ids (test data error); off-topic filter let "bitcoin price prediction" through because it contained "price" (fixed in `assistant.ts`); an overly loose regex in the injection eval.
 - **Not verified**: SQL migrations were never executed against a Postgres instance; the Razorpay live-test path and the Anthropic vision path were not exercised (no keys). See PROGRESS.md.
+
+## QA round (independent review of the Vercel deployment)
+- QA found that the in-memory store broke on serverless: `/pay/<id>` 404s, "Order not found", approvals reverting. Root cause was architectural (state per instance, time-derived ids), not a handful of bugs.
+- Fix: deterministic seed + per-visitor mutation log in a signed cookie, replayed on any instance; token-based agent carts/checkout claims. Verified by replay-equality evals and by a browser run against two separate servers sharing only cookies.
+- Assistant crash root cause: an effect whose arrow body returned `scrollIntoView(...)`; fixed and wrapped in an error boundary.
+- My own mistakes this round: a Python one-liner that truncated `search.ts` (restored from git); localStorage is per-origin so my first two-port test failed for a test-setup reason, not an app bug.

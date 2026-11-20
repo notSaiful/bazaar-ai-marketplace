@@ -12,7 +12,7 @@ export default async function AdminOrders({ searchParams }: { searchParams: Prom
   return (
     <div className="space-y-6">
       <Flash sp={sp} />
-      <div><h1 className="text-xl font-semibold">Orders</h1><p className="text-sm text-muted">A refund returns the money to the buyer and reverses the platform fee and the seller&apos;s payout.</p></div>
+      <div><h2 className="text-xl font-semibold">Orders</h2><p className="text-sm text-muted">A refund returns the money to the buyer and reverses the platform fee and the seller&apos;s payout.</p></div>
       <ul className="space-y-4">
         {orders.map((o) => {
           const g = d.groups.find((x) => x.id === o.groupId)!;
