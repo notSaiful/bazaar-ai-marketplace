@@ -1,0 +1,4 @@
+build*.log
+PRD.pdf
+node_modules
+.next
