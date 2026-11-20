@@ -18,7 +18,7 @@ export function RoleSwitcher({ role, sellerId, sellers, }: { role: string; selle
         id="role"
         value={role}
         onChange={(e) => go(`role=${e.target.value}`, e.target.value === "customer" ? "/" : e.target.value === "seller" ? "/seller" : "/admin")}
-        className="h-10 rounded-xl border border-line bg-surface px-2 text-sm"
+        className="h-10 rounded-full border border-line bg-surface px-3 text-sm"
       >
         <option value="customer">Shopping</option>
         <option value="seller">Selling</option>
@@ -27,7 +27,7 @@ export function RoleSwitcher({ role, sellerId, sellers, }: { role: string; selle
       {role === "seller" && (
         <>
           <label className="sr-only" htmlFor="sid">Acting as seller</label>
-          <select id="sid" value={sellerId} onChange={(e) => go(`sid=${e.target.value}`)} className="hidden h-10 max-w-40 rounded-xl border border-line bg-surface px-2 text-sm md:block">
+          <select id="sid" value={sellerId} onChange={(e) => go(`sid=${e.target.value}`)} className="hidden h-10 max-w-40 rounded-full border border-line bg-surface px-2 text-sm md:block">
             {sellers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </>

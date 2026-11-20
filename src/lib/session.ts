@@ -21,6 +21,13 @@ export async function getSession(): Promise<Session> {
   };
 }
 
+/** Display name for the current demo identity. */
+export function accountName(role: Role, sellerId: string) {
+  if (role === "seller") return getSeller(sellerId)?.name ?? "Seller";
+  if (role === "admin") return "Marketplace admin";
+  return "Aarav Sharma";
+}
+
 export async function requireRole(role: Role) {
   const s = await getSession();
   if (s.role !== role) throw new Error(`This action needs the ${role} role. Switch role from the header.`);

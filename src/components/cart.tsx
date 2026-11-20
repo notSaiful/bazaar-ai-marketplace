@@ -118,7 +118,7 @@ export function CartLines({ compact = false }: { compact?: boolean }) {
 export function CartButton() {
   const { count, setOpen } = useCart();
   return (
-    <button onClick={() => setOpen(true)} aria-label={`Open cart, ${count} items`} className="relative grid size-10 place-items-center rounded-xl border border-line bg-surface hover:bg-surface2">
+    <button onClick={() => setOpen(true)} aria-label={`Open cart, ${count} items`} className="relative grid size-10 place-items-center rounded-full border border-line bg-surface transition hover:bg-surface2">
       <ShoppingBag className="size-5" />
       {count > 0 && <span className="absolute -right-1.5 -top-1.5 grid min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-bold text-accent-fg">{count}</span>}
     </button>

@@ -1,19 +1,20 @@
 import Link from "next/link";
-import { getSession } from "@/lib/session";
+import { accountName, getSession } from "@/lib/session";
 import { db } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { CartButton } from "./cart";
 import { RoleSwitcher } from "./role-switcher";
 import { HeaderSearch } from "./header-search";
 import { ThemeToggle } from "./theme-toggle";
+import { AccountMenu } from "./account-menu";
 
 export async function Header() {
   const s = await getSession();
   const sellers = db().sellers.map((x) => ({ id: x.id, name: x.name }));
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-bg/90 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-line/70 bg-bg/75 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
-        <Link href="/" className="text-lg font-semibold tracking-tight" aria-label="Bazaar AI home">Bazaar<span className="text-accent">.</span></Link>
+        <Link href="/" className="text-xl font-semibold tracking-tight" aria-label="Bazaar AI home">Bazaar<span className="text-pop">.</span></Link>
         {s.role === "customer" ? (
           <HeaderSearch placeholder={t("search_ph", s.lang)} />
         ) : (
@@ -26,6 +27,7 @@ export async function Header() {
           {s.role === "customer" && <Link href="/orders" className="hidden px-2 text-sm text-muted hover:text-fg sm:block">{t("orders", s.lang)}</Link>}
           <RoleSwitcher role={s.role} sellerId={s.sellerId} sellers={sellers} lang={s.lang} />
           <ThemeToggle />
+          <AccountMenu name={accountName(s.role, s.sellerId)} role={s.role} ordersLabel={t("orders", s.lang)} />
           {s.role === "customer" && <CartButton />}
         </div>
       </div>
