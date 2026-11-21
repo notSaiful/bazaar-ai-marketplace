@@ -63,7 +63,7 @@ export default async function SearchPage({ searchParams }: { searchParams: SP })
         <EmptyState emoji="🔍" title="Nothing found" hint="Try fewer words, or something like “sardi ke liye shawl”." action={<Link href="/search" className={btn("primary")}>Clear search</Link>} />
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">{r.hits.slice(0, show).map((h, i) => <ProductCard key={h.product.id} p={h.product} lang={s.lang} why={q ? h.why : undefined} eager={i < 4} />)}</div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">{r.hits.slice(0, show).map((h, i) => <ProductCard key={h.product.id} p={h.product} lang={s.lang} why={q ? h.why : undefined} eager={i < 2} defer={i >= 4} />)}</div>
           {r.hits.length > show && (
             <div className="flex flex-col items-center gap-2 pt-2">
               <p className="text-sm text-muted">Showing {show} of {r.hits.length}</p>

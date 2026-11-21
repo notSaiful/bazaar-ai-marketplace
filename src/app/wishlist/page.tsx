@@ -17,7 +17,7 @@ export default async function WishlistPage() {
       {items.length === 0 ? (
         <EmptyState emoji="♡" title="Nothing saved yet" hint="Tap the heart on any product to keep it here for later." action={<Link href="/search" className={btn("primary")}>Browse products</Link>} />
       ) : (
-        <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">{items.map((p) => <ProductCard key={p.id} p={p} lang={s.lang} />)}</div>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">{items.map((p, i) => <ProductCard key={p.id} p={p} lang={s.lang} eager={i < 2} defer={i >= 4} />)}</div>
       )}
     </div>
   );

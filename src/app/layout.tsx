@@ -14,9 +14,6 @@ import { getWishlistIds } from "@/lib/wishlist";
 import { WishlistProvider } from "@/components/wishlist";
 import { BottomNav } from "@/components/bottom-nav";
 import { Suspense } from "react";
-import { Inter } from "next/font/google";
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-face", display: "swap", preload: false });
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +29,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const s = await getSession();
   const shop = s.role === "customer";
   return (
-    <html lang={s.lang} className={inter.variable} suppressHydrationWarning>
+    <html lang={s.lang} suppressHydrationWarning>
       <head><script dangerouslySetInnerHTML={{ __html: themeScript }} /></head>
       <body className="min-h-dvh antialiased">
         <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[100] focus:rounded-lg focus:bg-accent focus:px-3 focus:py-2 focus:text-accent-fg">Skip to content</a>

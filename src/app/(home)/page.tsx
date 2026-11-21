@@ -10,7 +10,7 @@ import { artUrl } from "@/lib/utils";
 import { SearchBox } from "@/components/search-box";
 import { CategoryChips } from "@/components/category-chips";
 import { ProductCard } from "@/components/product-card";
-import { ProductArt } from "@/components/ui";
+import { DeferredArt } from "@/components/deferred-art";
 
 const d = (ms: number) => ({ "--d": `${ms}ms` }) as CSSProperties;
 
@@ -67,7 +67,7 @@ export default async function Home() {
       <section aria-labelledby="pop">
         <SectionHead id="pop" title={t("featured", s.lang)} href="/search" cta="View all" />
         <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
-          {popular.map((p, i) => (i < 4 ? <div key={p.id}><ProductCard p={p} lang={s.lang} eager /></div> : <div key={p.id} data-reveal style={d((i % 4) * 80)}><ProductCard p={p} lang={s.lang} /></div>))}
+          {popular.map((p, i) => (i < 4 ? <div key={p.id}><ProductCard p={p} lang={s.lang} eager={i < 2} /></div> : <div key={p.id} data-reveal style={d((i % 4) * 80)}><ProductCard p={p} lang={s.lang} defer /></div>))}
         </div>
       </section>
 
@@ -83,7 +83,7 @@ export default async function Home() {
               style={d(i * 70)}
               className={`group flex items-center gap-3 p-3 transition-colors hover:bg-surface2 sm:border-line ${i % 2 === 0 ? "sm:border-r" : ""} ${i < newest.length - 2 ? "sm:border-b" : ""}`}
             >
-              <span className="size-12 shrink-0 overflow-hidden rounded-lg bg-surface2"><ProductArt src={artUrl(p)} alt="" sizes="48px" className="transition duration-500 group-hover:scale-110" /></span>
+              <span className="size-12 shrink-0 overflow-hidden rounded-lg bg-surface2"><DeferredArt src={artUrl(p)} alt="" sizes="48px" className="transition duration-500 group-hover:scale-110" /></span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium">{hi ? p.titleHi : p.title}</span>
                 <span className="block truncate text-xs text-muted">{catName[p.category]} · {sellerName(p.sellerId)}</span>
@@ -104,7 +104,7 @@ export default async function Home() {
               <div className="grid aspect-[16/9] grid-cols-3 gap-px overflow-hidden bg-line">
                 {[0, 1, 2].map((k) => {
                   const p = items[k % items.length];
-                  return <div key={k} className="overflow-hidden bg-surface2"><ProductArt src={artUrl(p)} alt="" sizes="(min-width: 1024px) 11vw, (min-width: 640px) 16vw, 33vw" className="h-full transition duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-110" /></div>;
+                  return <div key={k} className="overflow-hidden bg-surface2"><DeferredArt src={artUrl(p)} alt="" sizes="(min-width: 1024px) 11vw, (min-width: 640px) 16vw, 33vw" className="h-full transition duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-110" /></div>;
                 })}
               </div>
               <div className="flex items-start gap-3 p-4">

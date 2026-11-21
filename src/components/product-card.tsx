@@ -6,14 +6,20 @@ import { artUrl } from "@/lib/utils";
 import { AddToCart } from "./cart";
 import { ProductArt } from "./ui";
 import { HeartButton } from "./wishlist";
+import { DeferredArt } from "./deferred-art";
 
-export function ProductCard({ p, lang = "en", why, eager }: { p: Product; lang?: "en" | "hi"; why?: string[]; eager?: boolean }) {
+/** `defer` mounts the photo only near the viewport (use for cards past the first row). */
+export function ProductCard({ p, lang = "en", why, eager, defer }: { p: Product; lang?: "en" | "hi"; why?: string[]; eager?: boolean; defer?: boolean }) {
   const seller = getSeller(p.sellerId);
   return (
     <article className="group flex flex-col gap-3">
       <div className="relative">
         <Link href={`/product/${p.id}`} className="relative block overflow-hidden rounded-xl bg-surface2 transition duration-500 group-hover:lift">
-          <ProductArt eager={eager} src={artUrl(p)} alt={p.title} className="transition duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.04]" />
+          {defer && !eager ? (
+            <DeferredArt src={artUrl(p)} alt={p.title} className="transition duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.04]" />
+          ) : (
+            <ProductArt eager={eager} src={artUrl(p)} alt={p.title} className="transition duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.04]" />
+          )}
           {p.stock > 0 && p.stock <= 5 && <span className="absolute left-3 top-3 rounded-full bg-surface/90 px-2.5 py-1 text-xs font-medium text-warn backdrop-blur">Only {p.stock} left</span>}
           {p.stock < 1 && <span className="absolute left-3 top-3 rounded-full bg-surface/90 px-2.5 py-1 text-xs font-medium text-bad backdrop-blur">Sold out</span>}
           {seller && (
