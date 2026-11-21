@@ -6,9 +6,13 @@ import { Assistant } from "@/components/assistant";
 import { getSession } from "@/lib/session";
 import { LangToggle } from "@/components/lang-toggle";
 import { RevealObserver } from "@/components/reveal";
-import { Geist } from "next/font/google";
+import { LiveClock } from "@/components/live-clock";
+import { SideNav } from "@/components/side-nav";
+import { sideNavData } from "@/lib/nav";
+import { Suspense } from "react";
+import { Inter } from "next/font/google";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-face", display: "swap" });
 
 export const dynamic = "force-dynamic";
 
@@ -16,36 +20,46 @@ export const metadata: Metadata = {
   title: { default: "Bazaar AI: one cart, many makers", template: "%s · Bazaar AI" },
   description: "AI-first multi-vendor marketplace: photo-to-listing, Hinglish search, one checkout, transparent commission.",
 };
-export const viewport: Viewport = { themeColor: "#141416", width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { themeColor: "#09090a", width: "device-width", initialScale: 1 };
 
 const themeScript = `try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}document.documentElement.classList.add('js-reveal');setTimeout(function(){if(!window.__rv)document.documentElement.classList.remove('js-reveal')},3000);`;
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const s = await getSession();
   return (
-    <html lang={s.lang} className={geist.variable} suppressHydrationWarning>
+    <html lang={s.lang} className={inter.variable} suppressHydrationWarning>
       <head><script dangerouslySetInnerHTML={{ __html: themeScript }} /></head>
       <body className="min-h-dvh antialiased">
         <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[100] focus:rounded-lg focus:bg-accent focus:px-3 focus:py-2 focus:text-accent-fg">Skip to content</a>
         <CartProvider>
-          <Header />
-          <main id="main" className="mx-auto min-h-[70dvh] max-w-6xl px-4 py-10">{children}</main>
-          <footer className="mt-24 border-t border-line">
-            <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="text-lg font-semibold tracking-tight">Bazaar<span className="text-pop">.</span></div>
-                <p className="mt-1 text-sm text-muted">One cart, many makers. Demo mode, test payments.</p>
-              </div>
-              <nav aria-label="Footer" className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted">
-                <a className="hover:text-fg" href="/search">Shop</a>
-                <a className="hover:text-fg" href="/orders">Orders</a>
-                <a className="hover:text-fg" href="/account">Account</a>
-                <a className="hover:text-fg" href="/credits">Photo credits</a>
-                <a className="hover:text-fg" href="/.well-known/ucp">For AI agents</a>
-                <LangToggle lang={s.lang} />
-              </nav>
+          <div className="flex min-h-dvh">
+            <Suspense><SideNav d={sideNavData(s)} /></Suspense>
+            <div className="flex min-w-0 flex-1 flex-col">
+              <Header />
+              <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-8">{children}</main>
+              <footer className="border-t border-line">
+                <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-10 sm:grid-cols-[1.4fr_1fr_1fr_auto] sm:px-8">
+                  <div>
+                    <div className="text-sm font-semibold tracking-tight">Bazaar</div>
+                    <p className="mt-1 max-w-xs text-sm text-muted">One cart, many makers. Demo mode, test payments.</p>
+                  </div>
+                  <nav aria-label="Footer" className="flex flex-col gap-2 text-sm">
+                    <p className="text-xs font-medium text-muted">Shop</p>
+                    <a className="hover:text-muted" href="/search">All products</a>
+                    <a className="hover:text-muted" href="/orders">Orders</a>
+                    <a className="hover:text-muted" href="/account">Account</a>
+                  </nav>
+                  <nav aria-label="Resources" className="flex flex-col gap-2 text-sm">
+                    <p className="text-xs font-medium text-muted">Resources</p>
+                    <a className="hover:text-muted" href="/credits">Photo credits</a>
+                    <a className="hover:text-muted" href="/.well-known/ucp">For AI agents</a>
+                    <span className="text-muted"><LangToggle lang={s.lang} /></span>
+                  </nav>
+                  <LiveClock />
+                </div>
+              </footer>
             </div>
-          </footer>
+          </div>
           {s.role === "customer" && <Assistant />}
           <CartDrawer />
           <RevealObserver />

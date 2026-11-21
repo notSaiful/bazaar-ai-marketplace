@@ -29,7 +29,7 @@ export default async function ProductPage({ params }: { params: P }) {
     <div className="grid gap-10 md:grid-cols-2">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <figure>
-        <div className="overflow-hidden rounded-[28px] bg-surface2"><ProductArt src={artUrl(p)} alt={p.title} className="aspect-square" /></div>
+        <div className="overflow-hidden rounded-xl bg-surface2"><ProductArt src={artUrl(p)} alt={p.title} className="aspect-square" /></div>
         {credit && p.image === `/products/${p.id}.jpg` && (
           <figcaption className="mt-2 text-xs text-muted">
             Photo: <a href={credit.source} target="_blank" rel="noopener noreferrer" className="underline hover:text-fg">{credit.creator || "Unknown"}</a>, <a href={credit.licenseUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-fg">{licenseLabel(credit.license)}</a>. Illustrative image.

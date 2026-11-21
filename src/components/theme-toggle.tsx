@@ -8,7 +8,7 @@ export function ThemeToggle() {
   return (
     <button
       aria-label="Toggle dark mode"
-      className="grid size-10 place-items-center rounded-full border border-line bg-surface transition hover:bg-surface2"
+      className="grid size-9 place-items-center rounded-lg border border-line bg-surface transition hover:bg-surface2"
       onClick={() => {
         const next = !dark;
         setDark(next);

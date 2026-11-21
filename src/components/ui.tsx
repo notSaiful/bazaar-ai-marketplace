@@ -6,10 +6,10 @@ import type { OrderStatus } from "@/lib/types";
 
 export function btn(variant: "primary" | "secondary" | "ghost" | "danger" | "outline" = "primary", size: "sm" | "md" | "lg" = "md") {
   return cn(
-    "inline-flex items-center justify-center gap-2 rounded-full font-medium tracking-tight transition duration-200 hover:-translate-y-px active:translate-y-0 active:scale-[.98] disabled:opacity-50 disabled:pointer-events-none cursor-pointer select-none",
-    size === "sm" && "h-8 px-3 text-sm",
-    size === "md" && "h-10 px-4 text-sm",
-    size === "lg" && "h-12 px-6 text-base",
+    "inline-flex items-center justify-center gap-2 rounded-lg font-medium tracking-tight transition duration-150 active:scale-[.98] disabled:opacity-50 disabled:pointer-events-none cursor-pointer select-none",
+    size === "sm" && "h-8 px-3 text-[13px]",
+    size === "md" && "h-9 px-3.5 text-sm",
+    size === "lg" && "h-11 px-5 text-sm",
     variant === "primary" && "gloss bg-accent text-accent-fg hover:opacity-90",
     variant === "secondary" && "bg-surface2 text-fg hover:bg-line",
     variant === "outline" && "border border-line bg-surface text-fg hover:bg-surface2",
@@ -18,10 +18,10 @@ export function btn(variant: "primary" | "secondary" | "ghost" | "danger" | "out
   );
 }
 
-export const inputCls = "h-10 w-full rounded-[10px] border border-line bg-surface px-3 text-sm text-fg placeholder:text-muted focus-visible:outline-2";
+export const inputCls = "h-9 w-full rounded-lg border border-line bg-surface px-3 text-sm text-fg placeholder:text-muted focus-visible:outline-2";
 
 export function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cn("rounded-[20px] border border-line bg-surface", className)}>{children}</div>;
+  return <div className={cn("rounded-xl border border-line bg-surface", className)}>{children}</div>;
 }
 
 export function Badge({ children, tone = "neutral", className }: { children: ReactNode; tone?: "neutral" | "ok" | "warn" | "bad" | "accent"; className?: string }) {
@@ -79,7 +79,7 @@ export function PageHeader({ title, sub, action }: { title: string; sub?: string
   return (
     <div className="rise flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{title}</h1>
+        <h1 className="text-3xl font-semibold leading-none tracking-tight sm:text-[40px]">{title}</h1>
         {sub && <p className="mt-1 text-sm text-muted">{sub}</p>}
       </div>
       {action}
@@ -124,7 +124,7 @@ export function ProductArt({ src, alt, className }: { src: string; alt: string; 
 
 export function TabLink({ href, active, children }: { href: string; active?: boolean; children: ReactNode }) {
   return (
-    <Link href={href} className={cn("whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition", active ? "bg-accent-soft text-accent" : "text-muted hover:bg-surface2 hover:text-fg")}>
+    <Link href={href} className={cn("whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition", active ? "bg-accent-soft text-accent" : "text-muted hover:bg-surface2 hover:text-fg")}>
       {children}
     </Link>
   );

@@ -9,7 +9,7 @@ export default function Credits() {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <PageHeader title="Photo credits" sub="Product photos are openly licensed images found through Openverse, cropped to fit. They illustrate the kind of item listed and are not photos of the exact product." />
-      <ul className="divide-y divide-line rounded-[20px] border border-line">
+      <ul className="divide-y divide-line rounded-xl border border-line">
         {Object.entries(PHOTO_CREDITS).map(([id, c]) => (
           <li key={id} className="flex flex-col gap-1 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
             <Link href={`/product/${id}`} className="font-medium hover:underline">{titles[id] ?? id}</Link>
