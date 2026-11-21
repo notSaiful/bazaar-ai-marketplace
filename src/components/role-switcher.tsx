@@ -4,6 +4,7 @@ import { useTransition } from "react";
 
 export function RoleSwitcher({ role, sellerId, sellers, }: { role: string; sellerId: string; sellers: { id: string; name: string }[]; lang?: string }) {
   const router = useRouter();
+  const current = sellers.find((x) => x.id === sellerId)?.name;
   const [pending, start] = useTransition();
   const go = (qs: string, to?: string) =>
     start(async () => {
@@ -24,13 +25,8 @@ export function RoleSwitcher({ role, sellerId, sellers, }: { role: string; selle
         <option value="seller">Selling</option>
         <option value="admin">Admin</option>
       </select>
-      {role === "seller" && (
-        <>
-          <label className="sr-only" htmlFor="sid">Acting as seller</label>
-          <select id="sid" value={sellerId} onChange={(e) => go(`sid=${e.target.value}`)} className="hidden h-9 max-w-40 rounded-lg border border-line bg-surface px-2 text-sm md:block">
-            {sellers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
-        </>
+      {role === "seller" && current && (
+        <span className="hidden h-9 max-w-48 items-center truncate rounded-lg border border-line bg-surface px-3 text-sm font-medium md:flex" title="Your shop">{current}</span>
       )}
 
     </div>
