@@ -8,8 +8,9 @@ import { t } from "@/lib/i18n";
 import { formatINR } from "@/lib/money";
 import { artUrl } from "@/lib/utils";
 import { SearchBox } from "@/components/search-box";
+import { CategoryChips } from "@/components/category-chips";
 import { ProductCard } from "@/components/product-card";
-import { ProductArt, btn } from "@/components/ui";
+import { ProductArt } from "@/components/ui";
 
 const d = (ms: number) => ({ "--d": `${ms}ms` }) as CSSProperties;
 
@@ -36,7 +37,7 @@ export default async function Home() {
   // Newest first, but take turns across categories so one seller's batch upload doesn't fill the list.
   const byCat = CATEGORIES.map((c) => live.filter((p) => p.category === c.slug).sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
   const newest = Array.from({ length: 6 }, (_, i) => byCat[i % byCat.length][Math.floor(i / byCat.length)]).filter(Boolean);
-  const popular = [...live].sort((a, b) => b.rating - a.rating).slice(0, 8);
+  const popular = [...live].sort((a, b) => b.rating - a.rating).slice(0, 12);
   const makers = sellers.filter((x) => x.status === "active").map((m) => ({ m, items: live.filter((p) => p.sellerId === m.id) })).filter((x) => x.items.length);
   const steps = [
     { title: "Search the way you talk", body: "English, Hindi or Hinglish. “diwali ke liye diya” just works." },
@@ -45,19 +46,29 @@ export default async function Home() {
   ];
 
   return (
-    <div className="space-y-16">
-      {/* Hero */}
-      <section className="max-w-3xl pt-2">
-        <div className="rise mb-6 inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-2.5 py-1 text-[13px] text-muted">
+    <div className="space-y-12 sm:space-y-16">
+      {/* Hero: PRD storefront puts a prominent search first */}
+      <section className="mx-auto max-w-3xl pt-2 text-center">
+        <div className="rise mb-5 inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-2.5 py-1 text-[13px] text-muted">
           <span className="status-dot" aria-hidden /> {live.length} handmade products · {makers.length} makers · free delivery
         </div>
-        <h1 className="rise text-[44px] font-semibold leading-[1] tracking-tight sm:text-[56px]" style={d(60)}>{t("hero_title", s.lang)}</h1>
-        <p className="rise mt-5 max-w-xl text-base text-muted sm:text-lg" style={d(120)}>{t("hero_sub", s.lang)}</p>
-        <div className="rise mt-7 flex flex-wrap gap-2" style={d(180)}>
-          <Link href="/search" className={btn("primary", "lg")}>{t("shop", s.lang)} <ArrowRight className="size-4" /></Link>
-          <a href="#makers" className={btn("outline", "lg")}>{t("sellers", s.lang)}</a>
+        <h1 className="rise text-[36px] font-semibold leading-[1.05] tracking-tight sm:text-[52px]" style={d(60)}>{t("hero_title", s.lang)}</h1>
+        <p className="rise mx-auto mt-4 max-w-xl text-base text-muted sm:text-lg" style={d(120)}>{t("hero_sub", s.lang)}</p>
+        <div className="rise mx-auto mt-7 max-w-2xl text-left" style={d(180)}><SearchBox big placeholder={t("search_ph", s.lang)} /></div>
+        <p className="rise mt-3 text-xs text-muted" style={d(220)}>Try “diwali ke liye diya”, “sardi ke liye shawl” or tap ✨ to ask the assistant.</p>
+      </section>
+
+      {/* Category chips */}
+      <section aria-label="Shop by category" className="rise flex justify-center" style={d(260)}>
+        <CategoryChips active="" hrefFor={(c) => (c ? `/search?category=${c}` : "/search")} lang={s.lang} />
+      </section>
+
+      {/* Popular grid */}
+      <section aria-labelledby="pop">
+        <SectionHead id="pop" title={t("featured", s.lang)} href="/search" cta="View all" />
+        <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
+          {popular.map((p, i) => <div key={p.id} data-reveal style={d((i % 4) * 80)}><ProductCard p={p} lang={s.lang} eager={i < 4} /></div>)}
         </div>
-        <div className="rise mt-8 max-w-xl" style={d(240)}><SearchBox big placeholder={t("search_ph", s.lang)} /></div>
       </section>
 
       {/* What's new: compact list rows */}
@@ -82,14 +93,6 @@ export default async function Home() {
             </Link>
           ))}
         </Panel>
-      </section>
-
-      {/* Popular grid */}
-      <section aria-labelledby="pop">
-        <SectionHead id="pop" title={t("featured", s.lang)} href="/search" cta="View all" />
-        <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
-          {popular.map((p, i) => <div key={p.id} data-reveal style={d((i % 4) * 80)}><ProductCard p={p} lang={s.lang} /></div>)}
-        </div>
       </section>
 
       {/* Makers: project-style cards with a photo mosaic cover */}

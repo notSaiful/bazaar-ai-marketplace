@@ -6,6 +6,7 @@ import { getSession } from "@/lib/session";
 import { formatINR } from "@/lib/money";
 import { ProductCard } from "@/components/product-card";
 import { EmptyState, btn, inputCls } from "@/components/ui";
+import { CategoryChips } from "@/components/category-chips";
 import { cn } from "@/lib/utils";
 
 type SP = Promise<Record<string, string | string[] | undefined>>;
@@ -39,12 +40,11 @@ export default async function SearchPage({ searchParams }: { searchParams: SP })
         <h1 className="text-2xl font-semibold">{title}</h1>
         <p className="mt-1 text-sm text-muted">{r.total} items{understood.length > 0 && q ? ` · understood as ${understood.join(", ")}` : ""}</p>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <Link href={href({ category: "" })} className={cn("rounded-full border px-4 py-1.5 text-sm", !category ? "border-accent text-accent" : "border-line text-muted hover:text-fg")}>All</Link>
-        {CATEGORIES.map((c) => <Link key={c.slug} href={href({ category: c.slug })} className={cn("rounded-full border px-4 py-1.5 text-sm", category === c.slug ? "border-accent text-accent" : "border-line text-muted hover:text-fg")}>{s.lang === "hi" ? c.nameHi : c.name}</Link>)}
+      <CategoryChips active={category} hrefFor={(c) => href({ category: c })} lang={s.lang} />
+      <div className="relative flex flex-wrap items-center gap-2">
         <details className="ml-auto" open={hasFilters}>
           <summary className="cursor-pointer text-sm text-muted hover:text-fg">Sort & filter</summary>
-          <form action="/search" className="absolute right-4 z-20 mt-2 w-72 space-y-3 rounded-2xl border border-line bg-surface p-4 shadow-lg">
+          <form action="/search" className="absolute right-0 z-20 mt-2 w-72 space-y-3 rounded-2xl border border-line bg-surface p-4 shadow-lg">
             {q && <input type="hidden" name="q" value={q} />}
             {category && <input type="hidden" name="category" value={category} />}
             <div><label htmlFor="sort" className="mb-1 block text-sm">Sort</label><select id="sort" name="sort" defaultValue={sort} className={inputCls}><option value="">Best match</option><option value="price_asc">Price: low to high</option><option value="price_desc">Price: high to low</option><option value="rating">Rating</option></select></div>

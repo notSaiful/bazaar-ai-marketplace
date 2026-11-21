@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Bot, Send, Sparkles, X, ShoppingCart, ChevronDown } from "lucide-react";
+import { Bot, Send, Sparkles, X, ShoppingCart, ChevronDown, MessageCircle } from "lucide-react";
 import { useCart } from "./cart";
 import { ProductArt, btn } from "./ui";
 import { formatINR } from "@/lib/money";
@@ -18,12 +18,17 @@ export function Assistant() {
   const [busy, setBusy] = useState(false);
   const { lines, add, setOpen: openCart } = useCart();
   const end = useRef<HTMLDivElement>(null);
+  const sendRef = useRef<(q: string) => void>(() => {});
   // NB: effect bodies must not return a value: React would call it as a cleanup (this caused "i is not a function").
   useEffect(() => {
     end.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [msgs, open]);
   useEffect(() => {
-    const show = () => setOpen(true);
+    const show = (e: Event) => {
+      setOpen(true);
+      const q = (e as CustomEvent<string>).detail;
+      if (typeof q === "string" && q) sendRef.current(q);
+    };
     window.addEventListener("open-assistant", show);
     return () => window.removeEventListener("open-assistant", show);
   }, []);
@@ -42,10 +47,12 @@ export function Assistant() {
     } finally { setBusy(false); }
   }
 
+  useEffect(() => { sendRef.current = send; });
+
   return (
     <>
-      <button onClick={() => setOpen(true)} className={cn("fixed bottom-4 right-4 z-40 hidden h-14 items-center gap-2 rounded-full bg-accent px-5 text-accent-fg shadow-xl transition hover:scale-105 md:flex", open && "md:hidden")}>
-        <Sparkles className="size-5" /><span className="text-sm font-semibold">Ask for help</span>
+      <button onClick={() => setOpen(true)} className={cn("fixed bottom-5 right-5 z-40 hidden h-14 items-center gap-3 rounded-full bg-[linear-gradient(100deg,#0f766e_0%,#14b8a6_45%,#f59e0b_100%)] pl-2 pr-2 text-white shadow-xl shadow-teal-900/20 transition hover:scale-105 md:flex", open && "md:hidden")}>
+        <span className="grid size-10 place-items-center rounded-full bg-white/20"><Sparkles className="size-5" /></span><span className="text-sm font-semibold">Ask for help</span><span className="grid size-10 place-items-center rounded-full bg-white text-amber-600"><MessageCircle className="size-5" /></span>
       </button>
       {open && (
         <section role="dialog" aria-label="Shopping assistant" className="pop fixed inset-x-0 bottom-0 z-[65] flex h-[85dvh] flex-col rounded-t-3xl border border-line bg-bg shadow-2xl sm:inset-x-auto sm:bottom-4 sm:right-4 sm:h-[620px] sm:w-[400px] sm:rounded-3xl">

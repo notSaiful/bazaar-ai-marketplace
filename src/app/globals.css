@@ -104,3 +104,6 @@ h1, h2, h3 { letter-spacing: -0.035em; }
   .js-reveal [data-reveal] { opacity: 1; transform: none; transition: none; }
   .rise, .status-dot::after, .slide-in-left, .fade-in { animation: none; }
 }
+
+.no-scrollbar{scrollbar-width:none}
+.no-scrollbar::-webkit-scrollbar{display:none}
