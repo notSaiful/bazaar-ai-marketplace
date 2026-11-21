@@ -17,7 +17,7 @@ export function SearchBox({ placeholder, initial = "", big = false }: { placehol
   const box = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (q.trim().length < 2) { setR(null); return; }
+    if (q.trim().length < 2) return;
     const ctl = new AbortController();
     const t = setTimeout(() => fetch(`/api/search?q=${encodeURIComponent(q)}&limit=5`, { signal: ctl.signal }).then((x) => x.json()).then(setR).catch(() => {}), 120);
     return () => { clearTimeout(t); ctl.abort(); };

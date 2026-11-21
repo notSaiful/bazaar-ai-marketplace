@@ -13,7 +13,8 @@ const STOP = new Set(
   ("a an the for of to in on and or me my mujhe mere meri mera chahiye chahie dikhao dikha do de dena show find get want need looking " +
     "ke ki ka ko se ek koi kuch wala wali wale hai hain hoga liye lie best accha achha achhi acchi good under below upto up tak kam " +
     "andar neeche rs inr rupay rupees rupaye price within budget aur with please pls bhai yaar jaisa jaise some any about " +
-    "के की का को से एक कोई कुछ वाला वाली वाले है हैं लिए और में पर").split(" "),
+    "के की का को से एक कोई कुछ वाला वाली वाले है हैं लिए और में पर " +
+    "kuch bhi sasta cheap budget affordable kifayati सस्ता").split(" "),
 );
 
 // canonical -> variants (English / Hinglish spellings / Devanagari)
@@ -73,6 +74,7 @@ const INTENTS: { keys: string[]; tags: string[]; category?: string; label: strin
 export interface ParsedQuery {
   raw: string;
   tokens: string[]; // canonicalised content tokens
+  nouns: string[]; // tokens that are not intent words (must match the product)
   maxPrice?: number; // paise
   minPrice?: number;
   intents: string[];
@@ -131,6 +133,7 @@ export function parseQuery(q: string, products: Product[] = liveProducts()): Par
   let cheap = false;
   let category: string | undefined;
   const tokens: string[] = [];
+  const nouns: string[] = [];
   for (const t of raw) {
     const intent = INTENTS.find((i) => i.keys.includes(t));
     if (intent) {
@@ -145,8 +148,9 @@ export function parseQuery(q: string, products: Product[] = liveProducts()): Par
       if (near) c = near;
     }
     tokens.push(c);
+    if (!intent) nouns.push(c);
   }
-  return { raw: q, tokens, maxPrice, minPrice, intents: [...new Set(intents)], cheap, category };
+  return { raw: q, tokens, nouns, maxPrice, minPrice, intents: [...new Set(intents)], cheap, category };
 }
 
 export interface SearchOpts {
@@ -214,6 +218,16 @@ export function search(q: string, opts: SearchOpts = {}) {
     for (const [id, r] of rs) fused.set(id, (fused.get(id) ?? 0) + 0.8 / (60 + r));
     // all content tokens must be explained by something unless there is an intent
     pool = pool.filter((p) => fused.has(p.id));
+    // The product noun must match (AND). Prefer title/tag matches over mentions in the description;
+    // intent words (gift, diwali, sasta…) only boost/sort, they never replace the noun.
+    if (parsed.nouns.length) {
+      const strong = (p: Product, t: string) => { const d = docTokens(p); return d.title.includes(t) || d.tags.includes(t); };
+      const weak = (p: Product, t: string) => strong(p, t) || docTokens(p).body.includes(t);
+      const tier1 = pool.filter((p) => parsed.nouns.every((t) => strong(p, t)));
+      const tier2 = pool.filter((p) => parsed.nouns.every((t) => weak(p, t)));
+      const tier3 = pool.filter((p) => parsed.nouns.some((t) => weak(p, t)));
+      pool = tier1.length ? tier1 : tier2.length ? tier2 : tier3;
+    }
     pool.sort((a, b) => (fused.get(b.id)! - fused.get(a.id)!) || b.rating - a.rating);
     pool.forEach((p) => kw.set(p.id, fused.get(p.id)!));
   } else {

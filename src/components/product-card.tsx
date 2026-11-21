@@ -6,12 +6,12 @@ import { artUrl } from "@/lib/utils";
 import { AddToCart } from "./cart";
 import { ProductArt } from "./ui";
 
-export function ProductCard({ p, lang = "en", why }: { p: Product; lang?: "en" | "hi"; why?: string[] }) {
+export function ProductCard({ p, lang = "en", why, eager }: { p: Product; lang?: "en" | "hi"; why?: string[]; eager?: boolean }) {
   const seller = getSeller(p.sellerId);
   return (
     <article className="group flex flex-col gap-3">
       <Link href={`/product/${p.id}`} className="relative block overflow-hidden rounded-xl bg-surface2 transition duration-500 group-hover:lift" aria-label={p.title}>
-        <ProductArt src={artUrl(p)} alt={p.title} className="transition duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.04]" />
+        <ProductArt eager={eager} src={artUrl(p)} alt={p.title} className="transition duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.04]" />
         {p.stock > 0 && p.stock <= 5 && <span className="absolute left-3 top-3 rounded-full bg-surface/90 px-2.5 py-1 text-xs font-medium text-warn backdrop-blur">Only {p.stock} left</span>}
         {p.stock < 1 && <span className="absolute left-3 top-3 rounded-full bg-surface/90 px-2.5 py-1 text-xs font-medium text-bad backdrop-blur">Sold out</span>}
         <span className="absolute bottom-3 right-3 rounded-full bg-surface/90 px-2.5 py-1 text-xs font-medium opacity-0 backdrop-blur transition duration-300 group-hover:opacity-100">★ {p.rating.toFixed(1)}</span>

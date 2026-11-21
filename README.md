@@ -10,10 +10,22 @@ Built from `docs/PRD.pdf`. Runs locally with **zero API keys**: data is seeded i
 npm install
 npm run dev          # http://localhost:3000
 npm run build && npm start
-npm run evals        # 99 checks: ledger, webhooks, stock races, search, agent honesty, injection, MCP
+npm run evals        # 114 checks: ledger, webhooks, stock races, search, agent honesty, injection, MCP, stateless replay
+npm run lint
+# end-to-end in a real browser against TWO independent servers (needs Chrome):
+PORT=3101 npm start & PORT=3102 npm start & sleep 5 && npm run e2e
 ```
 
-Node 20+. State lives in memory; restart (or Admin → Dashboard → "Reset demo data") restores the seed.
+Node 20+. **Demo state is per visitor and stored in the visitor's own signed cookie** (see "Hosting without a database"); *Admin → Overview → Reset demo data* (with confirmation) restores the seed for that visitor only.
+
+## Hosting without a database (Vercel-safe)
+Serverless instances do not share memory, so nothing important lives there:
+- The seed is **deterministic** (fixed ids such as `grp_seed_01`, `p_09`; order/payment/group ids for new activity are content hashes, never `Date.now()`-at-load).
+- A visitor's state is *seed + an ordered log of their successful mutations* (checkout, payment, fulfilment, refund, payout, approvals, published products). The log is kept in a signed, deflate-compressed cookie (`bz`, `bz1`, `bz2`, about 90 bytes per action, room for ~100+ actions) and replayed on a fresh seed by whichever instance serves the next request. Nothing is lost on cold starts or when requests land on different instances.
+- Agents have no cookies, so `create_cart` returns a **signed token** that *is* the cart, and `create_checkout` returns `pay_url = /pay/<id>?c=<signed claim>`. When the human opens it, the checkout is claimed into *their* session (stock reserved for 10 minutes), then they pay.
+- Limits: each browser has its own world (that is intended for a demo); uploaded product photos are not kept in the cookie (the generated illustration is used); agent `get_order_status` is best-effort across instances (it sees payments processed by the instance that handles it). Connect Supabase (`supabase/migrations`) for shared, durable state.
+
+Set `DEMO_STATE_SECRET` in production. Set `DEMO_MODE=off` to disable the role switcher once real auth is in place. Cookies are HttpOnly (+ Secure in production).
 
 ## Demo roles (no sign-in friction)
 Use the **view switcher** in the header: Shopping · Selling (pick which seller you act as) · Admin. The footer has a **हिंदी / English** toggle. Supabase Auth is wired as a prepared client (`src/lib/supabase.ts`), not enforced in the prototype.
@@ -41,6 +53,8 @@ curl -s localhost:3000/api/mcp -H 'content-type: application/json' -d '{"jsonrpc
 ## Architecture
 ```
 src/app            storefront, /seller, /admin, API routes (/api/*, /.well-known/ucp)
+src/lib/state.ts   signed cookie log, tokens, request scope (stateless persistence)
+src/lib/persist.ts writes the visitor's log to the cookie after each mutation
 src/lib/store.ts   data layer: catalogue, checkout + atomic stock reservation, ledger, refunds, payouts, analytics
 src/lib/search.ts  hybrid search: keyword ranker + concept ranker, reciprocal rank fusion, explainable matches
 src/lib/ai.ts      photo-to-listing (vision model or mock) with Zod schema; assistant.ts guarded shopping agent

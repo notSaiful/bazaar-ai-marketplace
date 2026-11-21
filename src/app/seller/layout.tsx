@@ -18,7 +18,7 @@ export default async function SellerLayout({ children }: { children: React.React
   const seller = getSeller(s.sellerId)!;
   return (
     <div className="space-y-8">
-      <div className="flex items-end justify-between gap-4"><div><div className="text-sm text-muted">{seller.city}</div><div className="text-xl font-semibold">{seller.name}</div></div><a href="/seller/onboarding" className="text-sm text-muted hover:text-fg">Register a new shop</a></div>
+      <div className="flex items-end justify-between gap-4"><div><div className="text-sm text-muted">{seller.city}</div><h1 className="text-xl font-semibold">{seller.name}</h1></div><a href="/seller/onboarding" className="text-sm text-muted hover:text-fg">Register a new shop</a></div>
       <PortalNav items={NAV} />
       {seller.status === "pending" && <p className="rounded-xl bg-warn/10 px-4 py-3 text-sm text-warn">Waiting for approval. You can save drafts now; publishing unlocks once an admin approves your shop.</p>}
       {seller.status === "suspended" && <p className="rounded-xl bg-bad/10 px-4 py-3 text-sm text-bad">Your shop is suspended and hidden from customers.</p>}

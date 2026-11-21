@@ -10,7 +10,7 @@ export default async function NewProduct({ searchParams }: { searchParams: Promi
   const seller = getSeller(s.sellerId)!;
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <h1 className="text-xl font-semibold">Add a product</h1>
+      <h2 className="text-xl font-semibold">Add a product</h2>
       <Flash sp={sp} />
       <ProductForm studio canPublish={seller.status === "active"} />
     </div>

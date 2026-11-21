@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createCheckout, db } from "@/lib/store";
 import { createRazorpayOrder } from "@/lib/razorpay";
 import { getSession } from "@/lib/session";
+import { persistState } from "@/lib/persist";
 
 export const dynamic = "force-dynamic";
 const Body = z.object({
@@ -22,5 +23,6 @@ export async function POST(req: Request) {
   if ("error" in r) return NextResponse.json({ error: r.error }, { status: 409 });
   const rz = await createRazorpayOrder(r.group.total, r.group.id);
   if (rz) db().groups.find((g) => g.id === r.group.id)!.razorpayOrderId = rz.id;
+  await persistState();
   return NextResponse.json({ groupId: r.group.id, total: r.group.total, sellers: r.orders.length });
 }

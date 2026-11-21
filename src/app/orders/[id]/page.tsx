@@ -26,6 +26,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
       )}
       <PageHeader title={`Order #${shortId(g.id)}`} sub={`${shortDate(g.createdAt)} · ${g.address}, ${g.city} ${g.pincode}`} />
       {g.status !== "paid" && <p className="rounded-xl bg-warn/15 p-3 text-sm text-warn">This order group is {g.status.replace("_", " ")}.</p>}
+      <p className="text-sm"><Link href="/orders" className="text-accent hover:underline">View all my orders</Link></p>
       <div className="grid gap-4 lg:grid-cols-2">
         {orders.map((o) => {
           const seller = getSeller(o.sellerId);

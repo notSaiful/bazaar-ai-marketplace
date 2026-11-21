@@ -20,8 +20,8 @@ export function btn(variant: "primary" | "secondary" | "ghost" | "danger" | "out
 
 export const inputCls = "h-9 w-full rounded-lg border border-line bg-surface px-3 text-sm text-fg placeholder:text-muted focus-visible:outline-2";
 
-export function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cn("rounded-xl border border-line bg-surface", className)}>{children}</div>;
+export function Card({ className, children, tabIndex }: { className?: string; children: ReactNode; tabIndex?: number }) {
+  return <div tabIndex={tabIndex} className={cn("rounded-xl border border-line bg-surface", className)}>{children}</div>;
 }
 
 export function Badge({ children, tone = "neutral", className }: { children: ReactNode; tone?: "neutral" | "ok" | "warn" | "bad" | "accent"; className?: string }) {
@@ -117,9 +117,9 @@ export function SplitBreakdown({ gross, commission, payout, bps, refunded, compa
   );
 }
 
-export function ProductArt({ src, alt, className }: { src: string; alt: string; className?: string }) {
+export function ProductArt({ src, alt, className, eager }: { src: string; alt: string; className?: string; eager?: boolean }) {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt={alt} loading="lazy" decoding="async" className={cn("aspect-square w-full object-cover", className)} />;
+  return <img src={src} alt={alt} loading={eager ? "eager" : "lazy"} fetchPriority={eager ? "high" : undefined} decoding="async" className={cn("aspect-square w-full object-cover", className)} />;
 }
 
 export function TabLink({ href, active, children }: { href: string; active?: boolean; children: ReactNode }) {

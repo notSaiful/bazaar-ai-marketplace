@@ -10,6 +10,10 @@ export function copilotAnswer(q: string): CopilotAnswer {
   const s = q.toLowerCase();
   if (/(top|best).*(seller|vendor)|seller.*(top|best)|kaun.*seller/.test(s))
     return { text: `${a.bySeller[0]?.name} leads with ${formatINR(a.bySeller[0]?.gmv ?? 0)} GMV across ${a.bySeller[0]?.orders} orders.`, chart: a.bySeller.map((x) => ({ label: x.name, value: x.gmv })), source: "analytics.bySeller (ledger-derived orders)" };
+  if (/(seller|vendor).*(commission|fee|earn)|(commission|fee|earn).*(seller|vendor)|kis seller/.test(s)) {
+    const by = [...a.bySeller].sort((x, y) => y.commission - x.commission);
+    return { text: `${by[0]?.name} earned the platform the most commission: ${formatINR(by[0]?.commission ?? 0)} on ${formatINR(by[0]?.gmv ?? 0)} of sales. Next: ${by.slice(1, 3).map((x) => `${x.name} (${formatINR(x.commission)})`).join(", ")}.`, chart: by.map((x) => ({ label: x.name, value: x.commission })), source: "orders grouped by seller (commission snapshotted per line)" };
+  }
   if (/commission|fee|take rate/.test(s))
     return { text: `Platform commission earned is ${formatINR(a.commission)} on ${formatINR(a.gmv)} GMV (${((a.commission / Math.max(1, a.gmv)) * 100).toFixed(1)}% effective, after reversals on refunds).`, chart: a.days.map((x) => ({ label: x.day.slice(5), value: x.commission })), source: "ledger: platform_commission" };
   if (/gmv|sales|revenue|trend/.test(s))

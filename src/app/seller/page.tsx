@@ -32,7 +32,7 @@ export default async function SellerHome({ searchParams }: { searchParams: Promi
             {low.map((p) => (
               <li key={p.id} className="flex items-center justify-between gap-3 p-4 text-sm">
                 <span className="truncate">{p.title} <span className="text-warn">· {p.stock} left</span></span>
-                <form action={setStockAction} className="flex items-center gap-2"><input type="hidden" name="id" value={p.id} /><input type="hidden" name="_back" value="/seller" /><label className="sr-only" htmlFor={`s-${p.id}`}>New stock for {p.title}</label><input id={`s-${p.id}`} name="stock" type="number" min={0} defaultValue={p.stock + 20} className={`${inputCls} h-9 w-20`} /><button className={btn("outline", "sm")}>Restock</button></form>
+                <form action={setStockAction} className="flex items-center gap-2"><input type="hidden" name="id" value={p.id} /><input type="hidden" name="_back" value="/seller" /><label className="sr-only" htmlFor={`s-${p.id}`}>New stock for {p.title}</label><input id={`s-${p.id}`} name="stock" type="number" min={0} defaultValue={p.stock + 20} className={`${inputCls} h-11 w-20 md:h-9`} /><button className={btn("outline", "sm")}>Restock</button></form>
               </li>
             ))}
           </ul>

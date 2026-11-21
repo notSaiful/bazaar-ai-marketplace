@@ -3,6 +3,7 @@ import "./globals.css";
 import { Header } from "@/components/header";
 import { CartProvider, CartDrawer } from "@/components/cart";
 import { Assistant } from "@/components/assistant";
+import { AssistantBoundary } from "@/components/assistant-boundary";
 import { getSession } from "@/lib/session";
 import { LangToggle } from "@/components/lang-toggle";
 import { RevealObserver } from "@/components/reveal";
@@ -60,7 +61,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </footer>
             </div>
           </div>
-          {s.role === "customer" && <Assistant />}
+          {s.role === "customer" && <AssistantBoundary><Assistant /></AssistantBoundary>}
           <CartDrawer />
           <RevealObserver />
         </CartProvider>

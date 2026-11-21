@@ -57,7 +57,7 @@ export default async function SearchPage({ searchParams }: { searchParams: SP })
       {r.hits.length === 0 ? (
         <EmptyState emoji="🔍" title="Nothing found" hint="Try fewer words, or something like “sardi ke liye shawl”." action={<Link href="/search" className={btn("primary")}>Clear search</Link>} />
       ) : (
-        <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">{r.hits.map((h) => <ProductCard key={h.product.id} p={h.product} lang={s.lang} why={q ? h.why : undefined} />)}</div>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">{r.hits.map((h, i) => <ProductCard key={h.product.id} p={h.product} lang={s.lang} why={q ? h.why : undefined} eager={i < 4} />)}</div>
       )}
     </div>
   );

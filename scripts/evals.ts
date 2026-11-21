@@ -1,7 +1,9 @@
 /* Eval + invariant suite: `npm run evals`. Writes evals/report.md; exits 1 on any failure. */
 import { writeFileSync } from "node:fs";
 import { assistantRespond } from "../src/lib/assistant";
-import { callTool } from "../src/lib/agent-tools";
+import { callTool, claimCheckout } from "../src/lib/agent-tools";
+import { decodeLog, encodeLog } from "../src/lib/state";
+import { POST as priceRoute } from "../src/app/api/cart/price/route";
 import { ListingDraftSchema, mockListing } from "../src/lib/ai";
 import { formatINR, lineCommission } from "../src/lib/money";
 import { hmac, WEBHOOK_SECRET } from "../src/lib/razorpay";
@@ -9,6 +11,7 @@ import { search } from "../src/lib/search";
 import * as S from "../src/lib/store";
 import { handleRazorpayWebhook, emitMockEvent } from "../src/lib/webhook";
 
+const pending: Promise<void>[] = [];
 const results: { group: string; name: string; pass: boolean; detail?: string }[] = [];
 function check(group: string, name: string, pass: boolean, detail?: string) {
   results.push({ group, name, pass, detail });
@@ -206,14 +209,21 @@ const golden: [string, string[]][] = [
   const cart = callTool("create_cart", { items: [{ product_id: "p_09", quantity: 1, price_inr: 1 }, { product_id: "p_30", quantity: 1 }] }, "http://x");
   const cd = cart.ok ? (cart.data as { cart_id: string; cart_token: string; total_inr: number }) : null;
   check(g, "create_cart ignores agent-supplied price (server authority)", !!cd && cd.total_inr === (S.getProduct("p_09")!.price + S.getProduct("p_30")!.price) / 100);
-  const co = callTool("create_checkout", { cart_id: cd!.cart_id, cart_token: "wrong", buyer: { name: "Agent Buyer", phone: "9999999999", address: "1 Test Road", city: "Pune", pincode: "411001" } }, "http://x");
+  const buyerArgs = { name: "Agent Buyer", phone: "9999999999", address: "1 Test Road", city: "Pune", pincode: "411001" };
+  const co = callTool("create_checkout", { cart_id: cd!.cart_id, cart_token: "wrong", buyer: buyerArgs }, "http://x");
   check(g, "checkout rejects a wrong cart token", !co.ok);
-  const co2 = callTool("create_checkout", { cart_id: cd!.cart_id, cart_token: cd!.cart_token, buyer: { name: "Agent Buyer", phone: "9999999999", address: "1 Test Road", city: "Pune", pincode: "411001" } }, "http://x");
+  const co2 = callTool("create_checkout", { cart_id: cd!.cart_id, cart_token: cd!.cart_token, buyer: buyerArgs }, "http://x");
   const gd = co2.ok ? (co2.data as { order_group_id: string; pay_url: string }) : null;
-  check(g, "checkout returns a pay link for a human", !!gd && gd.pay_url.endsWith(`/pay/${gd.order_group_id}`));
+  check(g, "checkout returns a pay link for a human (signed claim in the URL)", !!gd && /\/pay\/grp_[0-9a-f]{8}\?c=/.test(gd.pay_url));
   const st0 = callTool("get_order_status", { order_group_id: gd!.order_group_id, cart_token: cd!.cart_token }, "http://x");
   check(g, "status is pending before the human pays", st0.ok && (st0.data as { payment_status: string }).payment_status === "pending_payment");
-  emitMockEvent("payment.captured", gd!.order_group_id, "pay_eval_agent");
+  const claimTok = new URL(gd!.pay_url).searchParams.get("c")!;
+  const tampered = claimTok.slice(0, 20) + (claimTok[20] === "a" ? "b" : "a") + claimTok.slice(21);
+  check(g, "tampered claim token is rejected", "error" in claimCheckout(tampered));
+  const cl = claimCheckout(claimTok);
+  check(g, "opening the pay link claims the checkout in the human's session (stock reserved)", "groupId" in cl && cl.groupId === gd!.order_group_id && S.db().groups.some((x) => x.id === gd!.order_group_id && x.status === "pending_payment"));
+  check(g, "claiming twice is idempotent", "groupId" in claimCheckout(claimTok) && S.db().groups.filter((x) => x.id === gd!.order_group_id).length === 1);
+  emitMockEvent("payment.captured", gd!.order_group_id, "pay_mock_" + gd!.order_group_id.slice(4));
   const st1 = callTool("get_order_status", { order_group_id: gd!.order_group_id, cart_token: cd!.cart_token }, "http://x");
   check(g, "status flips to paid after the human pays (AGT-03)", st1.ok && (st1.data as { payment_status: string }).payment_status === "paid");
   check(g, "status is scoped to the caller's token", !callTool("get_order_status", { order_group_id: gd!.order_group_id, cart_token: "someone-else" }, "http://x").ok);
@@ -235,12 +245,74 @@ const golden: [string, string[]][] = [
   check("listing", "draft has Hindi + English copy and a price hint, but no final price field", /[ऀ-ॿ]/.test(d.descriptionHi) && d.description.length > 10 && d.priceHintMin > 0 && !("price" in d));
 }
 
+/* ---- stateless persistence (Vercel without a DB): replay, cookies, ids ---- */
+{
+  const g = "persistence";
+  const snapBefore = S.stateSnapshot();
+  const log0 = S.exportLog();
+  // 1) rebuild from the log on a fresh seed: identical state
+  const rebuilt = S.withLog(log0, () => S.stateSnapshot());
+  check(g, "replaying the mutation log on a fresh seed reproduces the exact state", rebuilt === snapBefore, `${log0.length} logged actions`);
+  // 2) cookie round-trip, tamper rejection
+  const enc = encodeLog(log0);
+  check(g, "log fits the signed cookie budget", enc !== null && enc.length <= 3, enc ? `${enc.join("").length} bytes in ${enc.length} cookie(s)` : "too big");
+  const read = (n: string) => (enc ? enc[n === "bz" ? 0 : Number(n.slice(2))] : undefined);
+  const dec = decodeLog(read);
+  check(g, "cookie round-trip returns the same log", JSON.stringify(dec) === JSON.stringify(log0));
+  const bad = enc ? [enc[0].slice(0, 30) + (enc[0][30] === "A" ? "B" : "A") + enc[0].slice(31), ...enc.slice(1)] : [];
+  check(g, "tampered cookie is rejected (ignored, never trusted)", decodeLog((n) => bad[n === "bz" ? 0 : Number(n.slice(2))]).length === 0);
+  // 3) another "instance" (cold start) sees the same seed ids
+  const ids = JSON.parse(S.withLog([], () => S.stateSnapshot())).groups.slice(0, 16).map((x: { id: string }) => x.id).join();
+  const G = globalThis as unknown as { __bzSeed?: string };
+  G.__bzSeed = undefined;
+  const ids2 = JSON.parse(S.withLog([], () => S.stateSnapshot())).groups.slice(0, 16).map((x: { id: string }) => x.id).join();
+  check(g, "seed order ids are deterministic across cold starts (grp_seed_NN)", ids === ids2 && ids.startsWith("grp_seed_01,grp_seed_02"));
+  // 4) full flow on a *fresh instance* from only the cookie: checkout → pay → accept → refund → payout → publish
+  const flow = S.withLog([], () => {
+    const c = S.createCheckout({ ...buyer, lines: [{ productId: "p_09", qty: 1 }, { productId: "p_18", qty: 1 }] });
+    if ("error" in c) return { ok: false, why: c.error, log: [] as ReturnType<typeof S.exportLog>, gid: "", oids: [] as string[] };
+    emitMockEvent("payment.captured", c.group.id, "pay_mock_" + c.group.id.slice(4));
+    const a = S.advanceOrder(c.orders[0].id, "accepted", c.orders[0].sellerId);
+    const r = S.refundOrder(c.orders[1].id, "admin");
+    S.setSellerStatus("s_naya", "active", "admin");
+    const p = S.saveProduct("s_naya", { title: "Persisted Product", titleHi: "", description: "long enough description", descriptionHi: "", category: "home", tags: ["x"], attributes: {}, price: 5000, mrp: 6000, stock: 3, hue: 1, emoji: "📦", publish: true });
+    return { ok: "ok" in a && "ok" in r && "ok" in p, why: "", log: S.exportLog(), gid: c.group.id, oids: c.orders.map((o) => o.id) };
+  });
+  check(g, "checkout, pay, accept, refund, approve seller, publish all succeed in one session", !!flow.ok);
+  const afterCookie = S.withLog(flow.log, () => {
+    const d = S.db();
+    const gid = flow.gid;
+    return { group: d.groups.find((x) => x.id === gid)?.status, o0: d.orders.find((x) => x.id === flow.oids[0])?.status, o1: d.orders.find((x) => x.id === flow.oids[1])?.status, naya: d.sellers.find((x) => x.id === "s_naya")?.status, prod: d.products.some((x) => x.title === "Persisted Product" && x.status === "live"), diff: S.reconciliation().diff };
+  });
+  check(g, "a different instance rebuilt from the cookie sees every change (paid, accepted, refunded, approved, published)", afterCookie.group === "paid" && afterCookie.o0 === "accepted" && afterCookie.o1 === "refunded" && afterCookie.naya === "active" && afterCookie.prod && afterCookie.diff === 0, JSON.stringify(afterCookie));
+  // 5) the visitor's changes do not leak into a pristine session
+  check(g, "a pristine session is unaffected by another visitor's changes", S.withLog([], () => S.db().sellers.find((x) => x.id === "s_naya")!.status === "pending"));
+  // 6) public cart API leaks no seller finance/PII
+  pending.push(priceRoute(new Request("http://x/api/cart/price", { method: "POST", body: JSON.stringify({ lines: [{ productId: "p_09", qty: 1 }] }) })).then((res) => res.text()).then((txt) => {
+    check(g, "cart price API exposes no bank, GSTIN or commission fields (P1-4)", !/bankLast4|gstin|commissionBps|joinedAt|1190|AAAPG/.test(txt) && /"name":"Ghar Sajawat"/.test(txt));
+  }));
+}
+
+/* ---- search relevance & multi-part assistant (P1-1, P1-2) ---- */
+{
+  const g = "relevance";
+  const top = (q: string) => search(q, { limit: 5 }).hits.map((h) => h.product.id);
+  const sk = top("sasta kurta");
+  check(g, "“sasta kurta” returns only kurtas, cheapest first (sasta is a sort, not a keyword)", sk.length >= 2 && sk.every((id) => ["p_01", "p_07"].includes(id)) && S.getProduct(sk[0])!.price <= S.getProduct(sk[1])!.price, sk.join());
+  const dd = top("diwali ke liye diya");
+  check(g, "“diwali ke liye diya” returns diyas, not kurtas or sarees", dd.includes("p_09") && !dd.includes("p_07") && !dd.includes("p_02"), dd.join());
+  const r = assistantRespond("maa ke liye gift 2000 tak, kuch festive aur ek chai bhi", []);
+  const cats = r.cards.map((c) => S.getProduct(c.id)!);
+  check(g, "multi-part request returns one item per part within budget (gift + festive + chai)", r.cards.length >= 3 && cats.some((p) => p.tags.includes("chai")) && (r.suggestedTotal ?? 0) <= 200000, r.cards.map((c) => c.title).join(" | "));
+}
+
 /* ---- final reconciliation after everything above ---- */
 {
   const r = S.reconciliation();
   check("ledger", "ledger reconciles to ₹0.00 after the whole suite", r.diff === 0 && r.unbalancedEvents === 0, `${r.events} events`);
 }
 
+Promise.all(pending).then(() => {
 const failed = results.filter((r) => !r.pass);
 const groups = [...new Set(results.map((r) => r.group))];
 const md = [
@@ -260,3 +332,4 @@ const md = [
 writeFileSync(new URL("../evals/report.md", import.meta.url), md);
 console.log(`\n${results.length - failed.length}/${results.length} checks passed`);
 process.exit(failed.length ? 1 : 0);
+});
