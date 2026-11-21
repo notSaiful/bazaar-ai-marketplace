@@ -30,7 +30,11 @@ export function Assistant() {
       if (typeof q === "string" && q) sendRef.current(q);
     };
     window.addEventListener("open-assistant", show);
-    return () => window.removeEventListener("open-assistant", show);
+    // Replay a ✨ tap that happened before this lazily loaded panel arrived (see assistant-lazy.tsx).
+    const w = window as Window & { __bzAsk?: string; __bzAssistantReady?: boolean };
+    w.__bzAssistantReady = true;
+    if (w.__bzAsk !== undefined) { const q = w.__bzAsk; delete w.__bzAsk; setTimeout(() => show(new CustomEvent("open-assistant", { detail: q })), 0); }
+    return () => { window.removeEventListener("open-assistant", show); w.__bzAssistantReady = false; };
   }, []);
 
   async function send(q: string) {
@@ -69,7 +73,7 @@ export function Assistant() {
                     <div className="mt-2 space-y-2">
                       {m.data.cards.map((c) => (
                         <div key={c.id} className="flex gap-2 rounded-xl border border-line bg-surface p-2 text-fg">
-                          <div className="size-14 shrink-0 overflow-hidden rounded-lg"><ProductArt src={artUrl(c)} alt="" /></div>
+                          <div className="size-14 shrink-0 overflow-hidden rounded-lg"><ProductArt src={artUrl(c)} alt="" sizes="64px" /></div>
                           <div className="min-w-0 flex-1">
                             <Link href={`/product/${c.id}`} className="line-clamp-1 text-sm font-medium hover:underline" onClick={() => setOpen(false)}>{c.title}</Link>
                             <div className="text-xs text-muted">{c.sellerName} · {c.stock <= 5 ? `only ${c.stock} left` : "in stock"}</div>

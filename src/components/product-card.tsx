@@ -12,7 +12,7 @@ export function ProductCard({ p, lang = "en", why, eager }: { p: Product; lang?:
   return (
     <article className="group flex flex-col gap-3">
       <div className="relative">
-        <Link href={`/product/${p.id}`} className="relative block overflow-hidden rounded-xl bg-surface2 transition duration-500 group-hover:lift" aria-label={p.title}>
+        <Link href={`/product/${p.id}`} className="relative block overflow-hidden rounded-xl bg-surface2 transition duration-500 group-hover:lift">
           <ProductArt eager={eager} src={artUrl(p)} alt={p.title} className="transition duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.04]" />
           {p.stock > 0 && p.stock <= 5 && <span className="absolute left-3 top-3 rounded-full bg-surface/90 px-2.5 py-1 text-xs font-medium text-warn backdrop-blur">Only {p.stock} left</span>}
           {p.stock < 1 && <span className="absolute left-3 top-3 rounded-full bg-surface/90 px-2.5 py-1 text-xs font-medium text-bad backdrop-blur">Sold out</span>}
@@ -36,6 +36,20 @@ export function ProductCard({ p, lang = "en", why, eager }: { p: Product; lang?:
   );
 }
 
+/** Mirrors ProductCard (square photo, title, seller line, price row) so nothing jumps when real cards arrive. */
 export function ProductGridSkeleton({ n = 8 }: { n?: number }) {
-  return <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">{Array.from({ length: n }).map((_, i) => <div key={i} className="skeleton aspect-[3/4] rounded-xl" />)}</div>;
+  return (
+    <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4" role="status" aria-label="Loading products">
+      {Array.from({ length: n }).map((_, i) => (
+        <div key={i} className="flex flex-col gap-3" aria-hidden>
+          <div className="skeleton aspect-square rounded-xl" />
+          <div className="space-y-2 px-1">
+            <div className="skeleton h-4 w-4/5" />
+            <div className="skeleton h-3 w-1/2" />
+            <div className="flex items-center justify-between pt-1"><div className="skeleton h-5 w-16" /><div className="skeleton h-8 w-14 rounded-lg" /></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }

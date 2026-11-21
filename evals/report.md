@@ -1,6 +1,6 @@
 # Eval & invariant report
 
-Generated 2026-11-21T11:37:09.212Z · 114 checks · **114 passed, 0 failed**
+Generated 2026-11-21T12:04:16.794Z · 114 checks · **114 passed, 0 failed**
 
 | Group | Passed | Total |
 |---|---|---|
@@ -80,7 +80,7 @@ All checks passed.
 - ✅ [search] golden: “achaar”
 - ✅ [search] golden: “kurtaa”
 - ✅ [search] golden hit-rate ≥ 90% (18/18)
-- ✅ [search] p95 latency < 150 ms (NFR-03) (p95=4.76ms)
+- ✅ [search] p95 latency < 150 ms (NFR-03) (p95=3.25ms)
 - ✅ [search] price filter parsed from “under 500”
 - ✅ [search] flagged listing never appears in search
 - ✅ [agent] price/stock/budget accuracy: “diwali gift 2000 tak maa ke liye”

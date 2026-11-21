@@ -15,7 +15,7 @@
   --pop: #6eb518;
   --sun: #ffd900;
   --link: #0099ff;
-  --ok: #4d8a0c;
+  --ok: #3b7006;
   --warn: #b45309;
   --bad: #dc2626;
 }
@@ -53,17 +53,21 @@
   --color-pop: var(--pop);
   --color-sun: var(--sun);
   --color-link: var(--link);
-  --font-sans: var(--font-face), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif;
+  --font-sans: "Rupee", var(--font-face), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif;
 }
 
 html { color-scheme: light; }
 html.dark { color-scheme: dark; }
+/* Draw only the ₹ sign from a system font so Inter's 84 KB latin-ext file is not fetched just for prices. */
+@font-face { font-family: "Rupee"; font-weight: 100 500; unicode-range: U+20B9; src: local("Segoe UI"), local("SegoeUI"), local("Roboto"), local("Roboto-Regular"), local("Noto Sans"), local("Arial"); }
+@font-face { font-family: "Rupee"; font-weight: 600 900; unicode-range: U+20B9; src: local("Segoe UI Semibold"), local("SegoeUI-Semibold"), local("Roboto Medium"), local("Roboto-Medium"), local("Noto Sans Medium"), local("Arial Bold"); }
 body { background: var(--bg); color: var(--fg); font-family: var(--font-sans); }
 h1, h2, h3 { letter-spacing: -0.035em; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 
 @keyframes shimmer { 100% { transform: translateX(100%); } }
-.skeleton { position: relative; overflow: hidden; background: var(--surface-2); border-radius: 8px; }
+.skeleton { position: relative; overflow: hidden; background: var(--surface-2); }
+@layer base { .skeleton { border-radius: 8px; } }
 .skeleton::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%);
   background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--fg) 8%, transparent), transparent);
   animation: shimmer 1.4s infinite; }
@@ -90,6 +94,10 @@ h1, h2, h3 { letter-spacing: -0.035em; }
 .slide-in-left { animation: slide-in-left .28s cubic-bezier(.22,1,.36,1); }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 .fade-in { animation: fade-in .2s ease-out; }
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes slide-in-right { from { transform: translateX(100%); } to { transform: none; } }
+@utility sheet-up { animation: sheet-up .3s cubic-bezier(.22,1,.36,1); }
+@utility slide-in-right { animation: slide-in-right .3s cubic-bezier(.22,1,.36,1); }
 
 /* Scroll reveal: elements start hidden only once JS marks the page ready */
 .js-reveal [data-reveal] { opacity: 0; transform: translateY(14px); transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); transition-delay: var(--d, 0ms); }
@@ -102,7 +110,7 @@ h1, h2, h3 { letter-spacing: -0.035em; }
 
 @media (prefers-reduced-motion: reduce) {
   .js-reveal [data-reveal] { opacity: 1; transform: none; transition: none; }
-  .rise, .status-dot::after, .slide-in-left, .fade-in { animation: none; }
+  .rise, .status-dot::after, .slide-in-left, .fade-in, [class*="sheet-up"], [class*="slide-in-right"] { animation: none !important; }
 }
 
 .no-scrollbar{scrollbar-width:none}

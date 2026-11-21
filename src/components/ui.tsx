@@ -117,9 +117,17 @@ export function SplitBreakdown({ gross, commission, payout, bps, refunded, compa
   );
 }
 
-export function ProductArt({ src, alt, className, eager }: { src: string; alt: string; className?: string; eager?: boolean }) {
+const PHOTO = /^\/products\/(p_\w+)\.jpg$/;
+
+/**
+ * Product image. Seeded photos have 160w/400w/800w WebP copies (npm run photos), served via srcset so a
+ * 180px card never downloads the 800px original. `sizes` should describe the rendered width.
+ */
+export function ProductArt({ src, alt, className, eager, sizes = "(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw" }: { src: string; alt: string; className?: string; eager?: boolean; sizes?: string }) {
+  const m = PHOTO.exec(src);
+  const set = m ? { src: `/products/${m[1]}-800.webp`, srcSet: `/products/${m[1]}-160.webp 160w, /products/${m[1]}-400.webp 400w, /products/${m[1]}-800.webp 800w`, sizes } : { src };
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt={alt} loading={eager ? "eager" : "lazy"} fetchPriority={eager ? "high" : undefined} decoding="async" className={cn("aspect-square w-full object-cover", className)} />;
+  return <img {...set} alt={alt} width={800} height={800} loading={eager ? "eager" : "lazy"} fetchPriority={eager ? "high" : undefined} decoding={eager ? "sync" : "async"} className={cn("aspect-square w-full object-cover", className)} />;
 }
 
 export function TabLink({ href, active, children }: { href: string; active?: boolean; children: ReactNode }) {

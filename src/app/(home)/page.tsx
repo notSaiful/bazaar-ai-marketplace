@@ -37,7 +37,7 @@ export default async function Home() {
   // Newest first, but take turns across categories so one seller's batch upload doesn't fill the list.
   const byCat = CATEGORIES.map((c) => live.filter((p) => p.category === c.slug).sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
   const newest = Array.from({ length: 6 }, (_, i) => byCat[i % byCat.length][Math.floor(i / byCat.length)]).filter(Boolean);
-  const popular = [...live].sort((a, b) => b.rating - a.rating).slice(0, 12);
+  const popular = [...live].sort((a, b) => b.rating - a.rating).slice(0, 8);
   const makers = sellers.filter((x) => x.status === "active").map((m) => ({ m, items: live.filter((p) => p.sellerId === m.id) })).filter((x) => x.items.length);
   const steps = [
     { title: "Search the way you talk", body: "English, Hindi or Hinglish. “diwali ke liye diya” just works." },
@@ -67,7 +67,7 @@ export default async function Home() {
       <section aria-labelledby="pop">
         <SectionHead id="pop" title={t("featured", s.lang)} href="/search" cta="View all" />
         <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
-          {popular.map((p, i) => <div key={p.id} data-reveal style={d((i % 4) * 80)}><ProductCard p={p} lang={s.lang} eager={i < 4} /></div>)}
+          {popular.map((p, i) => (i < 4 ? <div key={p.id}><ProductCard p={p} lang={s.lang} eager /></div> : <div key={p.id} data-reveal style={d((i % 4) * 80)}><ProductCard p={p} lang={s.lang} /></div>))}
         </div>
       </section>
 
@@ -83,7 +83,7 @@ export default async function Home() {
               style={d(i * 70)}
               className={`group flex items-center gap-3 p-3 transition-colors hover:bg-surface2 sm:border-line ${i % 2 === 0 ? "sm:border-r" : ""} ${i < newest.length - 2 ? "sm:border-b" : ""}`}
             >
-              <span className="size-12 shrink-0 overflow-hidden rounded-lg bg-surface2"><ProductArt src={artUrl(p)} alt="" className="transition duration-500 group-hover:scale-110" /></span>
+              <span className="size-12 shrink-0 overflow-hidden rounded-lg bg-surface2"><ProductArt src={artUrl(p)} alt="" sizes="48px" className="transition duration-500 group-hover:scale-110" /></span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium">{hi ? p.titleHi : p.title}</span>
                 <span className="block truncate text-xs text-muted">{catName[p.category]} · {sellerName(p.sellerId)}</span>
@@ -104,7 +104,7 @@ export default async function Home() {
               <div className="grid aspect-[16/9] grid-cols-3 gap-px overflow-hidden bg-line">
                 {[0, 1, 2].map((k) => {
                   const p = items[k % items.length];
-                  return <div key={k} className="overflow-hidden bg-surface2"><ProductArt src={artUrl(p)} alt="" className="h-full transition duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-110" /></div>;
+                  return <div key={k} className="overflow-hidden bg-surface2"><ProductArt src={artUrl(p)} alt="" sizes="(min-width: 1024px) 11vw, (min-width: 640px) 16vw, 33vw" className="h-full transition duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-110" /></div>;
                 })}
               </div>
               <div className="flex items-start gap-3 p-4">

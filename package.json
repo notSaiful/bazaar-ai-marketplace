@@ -10,7 +10,8 @@
     "evals": "tsx scripts/evals.ts",
     "test": "tsx scripts/evals.ts",
     "typecheck": "tsc --noEmit",
-    "e2e": "node scripts/e2e.mjs"
+    "e2e": "node scripts/e2e.mjs",
+    "photos": "node scripts/photo-variants.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.2",

@@ -20,7 +20,7 @@ export default async function SellerProducts({ searchParams }: { searchParams: P
         <ul className="divide-y divide-line rounded-2xl border border-line">
           {mine.map((p) => (
             <li key={p.id} className="flex flex-wrap items-center gap-4 p-4">
-              <div className="size-14 shrink-0 overflow-hidden rounded-xl"><ProductArt src={artUrl(p)} alt="" /></div>
+              <div className="size-14 shrink-0 overflow-hidden rounded-xl"><ProductArt src={artUrl(p)} alt="" sizes="64px" /></div>
               <div className="min-w-0 flex-1"><Link href={`/seller/products/${p.id}`} className="font-medium hover:underline">{p.title}</Link><div className="text-sm text-muted tabular-nums">{formatINR(p.price)}{p.status !== "live" && <> · <StatusPill status={p.status} /></>}</div>{p.flagReason && <div className="text-xs text-bad">{p.flagReason}</div>}</div>
               <form action={setStockAction} className="flex items-center gap-2"><input type="hidden" name="id" value={p.id} /><label className="sr-only" htmlFor={`st-${p.id}`}>Stock for {p.title}</label><input id={`st-${p.id}`} name="stock" type="number" min={0} defaultValue={p.stock} className={`${inputCls} h-11 w-20 md:h-9`} /><button className={btn("ghost", "sm")}>Save</button></form>
             </li>

@@ -90,7 +90,7 @@ export function CartLines({ compact = false }: { compact?: boolean }) {
           <ul className="divide-y divide-line">
             {g.lines.map((l) => (
               <li key={l.product.id} className="flex gap-3 p-3">
-                <div className={cn("shrink-0 overflow-hidden rounded-lg", compact ? "size-14" : "size-20")}><ProductArt src={artUrl(l.product)} alt="" /></div>
+                <div className={cn("shrink-0 overflow-hidden rounded-lg", compact ? "size-14" : "size-20")}><ProductArt src={artUrl(l.product)} alt="" sizes="64px" /></div>
                 <div className="min-w-0 flex-1">
                   <Link href={`/product/${l.product.id}`} className="line-clamp-2 text-sm font-medium hover:underline">{l.product.title}</Link>
                   <div className="mt-0.5 text-sm tabular-nums text-muted">{formatINR(l.product.price)}</div>

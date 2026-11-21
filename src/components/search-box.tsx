@@ -47,7 +47,7 @@ export function SearchBox({ placeholder, initial = "", big = false }: { placehol
               {r.results.map((p) => (
                 <li key={p.id}>
                   <Link href={`/product/${p.id}`} onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-2 hover:bg-surface2">
-                    <div className="size-10 shrink-0 overflow-hidden rounded-lg"><ProductArt src={artUrl(p)} alt="" /></div>
+                    <div className="size-10 shrink-0 overflow-hidden rounded-lg"><ProductArt src={artUrl(p)} alt="" sizes="40px" /></div>
                     <div className="min-w-0 flex-1"><div className="truncate text-sm font-medium">{p.title}</div><div className="truncate text-xs text-muted">{p.why[0] ?? "Related"}</div></div>
                     <div className="text-sm font-semibold tabular-nums">{formatINR(p.price)}</div>
                   </Link>

@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Header } from "@/components/header";
 import { CartProvider, CartDrawer } from "@/components/cart";
-import { Assistant } from "@/components/assistant";
+import { AssistantLazy } from "@/components/assistant-lazy";
 import { AssistantBoundary } from "@/components/assistant-boundary";
 import { getSession } from "@/lib/session";
 import { LangToggle } from "@/components/lang-toggle";
@@ -16,7 +16,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { Suspense } from "react";
 import { Inter } from "next/font/google";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-face", display: "swap" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-face", display: "swap", preload: false });
 
 export const dynamic = "force-dynamic";
 
@@ -67,7 +67,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </footer>
             </div>
           </div>
-          {shop && <AssistantBoundary><Assistant /></AssistantBoundary>}
+          {shop && <AssistantBoundary><AssistantLazy /></AssistantBoundary>}
           {shop && <BottomNav />}
           <CartDrawer />
           <RevealObserver />
