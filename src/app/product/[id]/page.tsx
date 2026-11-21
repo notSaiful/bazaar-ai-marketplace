@@ -7,6 +7,7 @@ import { artUrl } from "@/lib/utils";
 import { AddToCart } from "@/components/cart";
 import { StockBadge } from "@/components/stock-badge";
 import { ProductArt } from "@/components/ui";
+import { PHOTO_CREDITS, licenseLabel } from "@/lib/catalog";
 
 type P = Promise<{ id: string }>;
 export async function generateMetadata({ params }: { params: P }) {
@@ -22,11 +23,19 @@ export default async function ProductPage({ params }: { params: P }) {
   const owner = s.role === "admin" || (s.role === "seller" && s.sellerId === p.sellerId);
   if (!isVisible(p) && !owner) notFound();
   const seller = getSeller(p.sellerId)!;
+  const credit = PHOTO_CREDITS[p.id];
   const jsonLd = { "@context": "https://schema.org", "@type": "Product", name: p.title, description: p.description, offers: { "@type": "Offer", priceCurrency: "INR", price: p.price / 100, availability: p.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock" } };
   return (
     <div className="grid gap-10 md:grid-cols-2">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <div className="overflow-hidden rounded-3xl border border-line"><ProductArt src={artUrl(p)} alt={p.title} className="aspect-square" /></div>
+      <figure>
+        <div className="overflow-hidden rounded-[28px] bg-surface2"><ProductArt src={artUrl(p)} alt={p.title} className="aspect-square" /></div>
+        {credit && p.image === `/products/${p.id}.jpg` && (
+          <figcaption className="mt-2 text-xs text-muted">
+            Photo: <a href={credit.source} target="_blank" rel="noopener noreferrer" className="underline hover:text-fg">{credit.creator || "Unknown"}</a>, <a href={credit.licenseUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-fg">{licenseLabel(credit.license)}</a>. Illustrative image.
+          </figcaption>
+        )}
+      </figure>
       <div className="space-y-6 md:pt-4">
         {!isVisible(p) && <p className="rounded-xl bg-warn/15 px-4 py-2 text-sm text-warn">Preview only: this item is {p.status} and hidden from customers.</p>}
         <div>

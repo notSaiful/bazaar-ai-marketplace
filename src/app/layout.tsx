@@ -40,6 +40,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <a className="hover:text-fg" href="/search">Shop</a>
                 <a className="hover:text-fg" href="/orders">Orders</a>
                 <a className="hover:text-fg" href="/account">Account</a>
+                <a className="hover:text-fg" href="/credits">Photo credits</a>
                 <a className="hover:text-fg" href="/.well-known/ucp">For AI agents</a>
                 <LangToggle lang={s.lang} />
               </nav>
