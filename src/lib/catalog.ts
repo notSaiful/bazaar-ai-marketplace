@@ -75,7 +75,7 @@ export interface PhotoCredit { title: string; creator: string; license: string; 
 /** Openly licensed product photos (Openverse). Attribution shown on product pages and /credits. */
 export const PHOTO_CREDITS: Record<string, PhotoCredit> = PHOTO_CREDITS_JSON;
 
-export const licenseLabel = (l: string) => (l.startsWith("CC0") ? l : `CC ${l}`);
+export const licenseLabel = (l: string) => (l.startsWith("CC0") ? l : l.startsWith("PDM") ? "Public Domain" : `CC ${l}`);
 
 export const PRODUCT_SEED: Product[] = rows.map((r, i) => {
   const [sellerId, title, titleHi, category, emoji, hue, price, mrp, stock, tags, attributes, description, descriptionHi] = r;
