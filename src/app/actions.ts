@@ -8,6 +8,9 @@ import { replayLastWebhook } from "@/lib/webhook";
 import { withState } from "@/lib/persist";
 import { rupees } from "@/lib/money";
 import type { OrderStatus, ProductStatus, SellerStatus } from "@/lib/types";
+import { t } from "@/lib/i18n";
+// Store errors are fixed English strings; errText shows them in the visitor's language (unknown text passes through).
+import { localizeMsg as errText } from "@/lib/dict/seller";
 
 const s = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 function back(path: string, kind: "msg" | "err", text: string): never {
@@ -17,14 +20,15 @@ function back(path: string, kind: "msg" | "err", text: string): never {
 
 /* ---------- seller ---------- */
 async function registerSellerActionImpl(f: FormData) {
+  const { lang } = await getSession();
   const name = s(f, "name"), city = s(f, "city"), bank = s(f, "bank");
-  if (name.length < 3 || city.length < 2 || !/^\d{4}$/.test(bank)) back("/seller/onboarding", "err", "Enter store name, city and the last 4 digits of your bank account.");
+  if (name.length < 3 || city.length < 2 || !/^\d{4}$/.test(bank)) back("/seller/onboarding", "err", t("msg.seller.registerInvalid", lang));
   const seller = store.registerSeller({ name, tagline: s(f, "tagline"), city, bankLast4: bank, gstin: s(f, "gstin") || undefined });
   const c = await cookies();
   c.set("role", "seller", { path: "/", httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production" });
   c.set("sid", seller.id, { path: "/", httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production" });
   revalidatePath("/", "layout");
-  back("/seller", "msg", "Store submitted! It's pending admin approval. You can draft products now; publishing unlocks after approval.");
+  back("/seller", "msg", t("msg.seller.registered", lang));
 }
 
 function parseAttrs(txt: string) {
@@ -53,9 +57,9 @@ async function saveProductActionImpl(f: FormData) {
     publish: s(f, "publish") === "1",
     aiGenerated: s(f, "aiGenerated") === "1",
   });
-  if ("error" in r) back(target, "err", r.error!);
+  if ("error" in r) back(target, "err", errText(r.error!, sess.lang));
   revalidatePath("/", "layout");
-  back("/seller/products", "msg", r.flagged ? "Saved, but flagged for admin review before it goes live." : s(f, "publish") === "1" ? "Published! It's live on the storefront." : "Draft saved.");
+  back("/seller/products", "msg", t(r.flagged ? "msg.product.flagged" : s(f, "publish") === "1" ? "msg.product.published" : "msg.product.draftSaved", sess.lang));
 }
 
 async function setStockActionImpl(f: FormData) {
@@ -63,24 +67,25 @@ async function setStockActionImpl(f: FormData) {
   const r = store.setStock(sess.sellerId, s(f, "id"), Math.floor(Number(s(f, "stock"))));
   const to = s(f, "_back") || "/seller/products";
   revalidatePath("/", "layout");
-  if ("error" in r) back(to, "err", r.error!);
-  back(to, "msg", "Stock updated. The storefront badge follows within seconds.");
+  if ("error" in r) back(to, "err", errText(r.error!, sess.lang));
+  back(to, "msg", t("msg.stock.updated", sess.lang));
 }
 
 async function archiveProductActionImpl(f: FormData) {
   const sess = await requireRole("seller");
   const r = store.archiveProduct(sess.sellerId, s(f, "id"));
   revalidatePath("/", "layout");
-  if ("error" in r) back("/seller/products", "err", r.error!);
-  back("/seller/products", "msg", "Product archived.");
+  if ("error" in r) back("/seller/products", "err", errText(r.error!, sess.lang));
+  back("/seller/products", "msg", t("msg.product.archived", sess.lang));
 }
 
 async function advanceOrderActionImpl(f: FormData) {
   const sess = await requireRole("seller");
   const r = store.advanceOrder(s(f, "id"), s(f, "to") as OrderStatus, sess.sellerId);
   revalidatePath("/", "layout");
-  if ("error" in r) back("/seller/orders", "err", r.error!);
-  back("/seller/orders", "msg", `Order marked ${s(f, "to")}. The buyer sees it immediately.`);
+  if ("error" in r) back("/seller/orders", "err", errText(r.error!, sess.lang));
+  const to = s(f, "to");
+  back("/seller/orders", "msg", t("msg.order.marked", sess.lang, { status: sess.lang === "hi" ? t(`status.${to}`, "hi") : to }));
 }
 
 /* ---------- admin ---------- */
@@ -152,15 +157,15 @@ export interface ReviewFormState { ok?: string; error?: string; nonce?: number }
 
 async function submitReviewActionImpl(_prev: ReviewFormState, f: FormData): Promise<ReviewFormState> {
   const sess = await getSession();
-  if (sess.role !== "customer") return { error: "Switch to Shopping to write a review." };
-  if (!store.rateLimit(`review:${sess.customerId}`, 5)) return { error: "You're posting reviews very fast. Please wait a minute." };
+  if (sess.role !== "customer") return { error: t("msg.review.switch", sess.lang) };
+  if (!store.rateLimit(`review:${sess.customerId}`, 5)) return { error: t("msg.review.tooFast", sess.lang) };
   const productId = s(f, "productId");
   const r = store.addReview(productId, sess.customerId, { author: s(f, "author"), stars: Number(s(f, "stars")), text: s(f, "text") });
-  if ("error" in r) return { error: r.error };
+  if ("error" in r) return { error: r.error ? errText(r.error, sess.lang) : r.error };
   revalidatePath(`/product/${productId}`);
   return r.held
-    ? { ok: "Thanks! Your review is waiting for a quick check by our team before it appears.", nonce: Date.now() }
-    : { ok: "Thanks! Your review is live.", nonce: Date.now() };
+    ? { ok: t("msg.review.held", sess.lang), nonce: Date.now() }
+    : { ok: t("msg.review.live", sess.lang), nonce: Date.now() };
 }
 
 async function moderateReviewActionImpl(f: FormData) {
@@ -174,3 +179,22 @@ async function moderateReviewActionImpl(f: FormData) {
 
 export async function submitReviewAction(prev: ReviewFormState, f: FormData) { return withState(() => submitReviewActionImpl(prev, f)); }
 export async function moderateReviewAction(f: FormData) { return withState(() => moderateReviewActionImpl(f)); }
+
+/* ---------- Samples ads ---------- */
+async function removeAdActionImpl(f: FormData) {
+  const sess = await requireRole("seller");
+  const r = store.moderateAd(s(f, "id"), "remove", sess.sellerId);
+  revalidatePath("/samples");
+  if ("error" in r) back("/seller/ads", "err", t("seller.ads.err.key", sess.lang));
+  back("/seller/ads", "msg", t("seller.ads.removed", sess.lang));
+}
+async function moderateAdActionImpl(f: FormData) {
+  await requireRole("admin");
+  const decision = s(f, "decision") === "publish" ? "publish" : "remove";
+  const r = store.moderateAd(s(f, "id"), decision, "admin");
+  revalidatePath("/", "layout");
+  if ("error" in r) back("/admin", "err", r.error!);
+  back("/admin", "msg", decision === "publish" ? "Ad published." : "Ad removed.");
+}
+export async function removeAdAction(f: FormData) { return withState(() => removeAdActionImpl(f)); }
+export async function moderateAdAction(f: FormData) { return withState(() => moderateAdActionImpl(f)); }

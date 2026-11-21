@@ -2,12 +2,13 @@ import Link from "next/link";
 import { LayoutGrid } from "lucide-react";
 import { CATEGORIES } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
+import { t } from "@/lib/i18n";
 
 /** Round category icons from the PRD storefront mockup. Scrolls sideways on phones. */
 export function CategoryChips({ active, hrefFor, lang = "en" }: { active: string; hrefFor: (slug: string) => string; lang?: "en" | "hi" }) {
-  const items = [{ slug: "", name: lang === "hi" ? "सभी" : "All", emoji: "" }, ...CATEGORIES.map((c) => ({ slug: c.slug as string, name: lang === "hi" ? c.nameHi : c.name, emoji: c.emoji as string }))];
+  const items = [{ slug: "", name: t("shop.all", lang), emoji: "" }, ...CATEGORIES.map((c) => ({ slug: c.slug as string, name: lang === "hi" ? c.nameHi : c.name, emoji: c.emoji as string }))];
   return (
-    <nav aria-label="Categories" className="no-scrollbar -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:gap-5 sm:px-0">
+    <nav aria-label={t("nav.categories", lang)} className="no-scrollbar -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:gap-5 sm:px-0">
       {items.map((c) => {
         const on = c.slug === active;
         return (

@@ -17,8 +17,9 @@ export async function POST(req: Request) {
     groups: c.groups.map((g) => ({
       seller: { id: g.seller.id, name: g.seller.name, city: g.seller.city, slug: g.seller.slug },
       eta: g.eta,
+      etaAt: g.etaAt,
       subtotal: g.subtotal,
-      lines: g.lines.map((l) => ({ qty: l.qty, lineTotal: l.lineTotal, issue: l.issue, product: { id: l.product.id, title: l.product.title, price: l.product.price, hue: l.product.hue, emoji: l.product.emoji, image: l.product.image, stock: l.product.stock } })),
+      lines: g.lines.map((l) => ({ qty: l.qty, lineTotal: l.lineTotal, issue: l.issue, product: { id: l.product.id, title: l.product.title, titleHi: l.product.titleHi, price: l.product.price, hue: l.product.hue, emoji: l.product.emoji, image: l.product.image, stock: l.product.stock } })),
     })),
   });
 }

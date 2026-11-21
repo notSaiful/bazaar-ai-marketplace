@@ -1,6 +1,10 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { fill, type Lang } from "@/lib/i18n-core";
+import { ui as DICT } from "@/lib/dict/ui";
+
+const t = (key: string, lang: Lang, vars?: Record<string, string | number>) => fill(DICT[key]?.[lang] ?? DICT[key]?.en ?? key, vars);
 import { formatINR, bpsToPct, type Paise } from "@/lib/money";
 import type { OrderStatus } from "@/lib/types";
 
@@ -46,8 +50,9 @@ const STATUS_TONE: Record<string, "neutral" | "ok" | "warn" | "bad" | "accent"> 
   pending_payment: "warn", placed: "accent", accepted: "accent", packed: "accent", shipped: "accent", delivered: "ok", cancelled: "neutral", refunded: "bad",
   active: "ok", pending: "warn", suspended: "bad", live: "ok", draft: "neutral", flagged: "bad", rejected: "bad", archived: "neutral",
 };
-export function StatusPill({ status }: { status: OrderStatus | string }) {
-  return <Badge tone={STATUS_TONE[status] ?? "neutral"}>{status.replace("_", " ")}</Badge>;
+/** Pass `lang` to show the status in Hindi. */
+export function StatusPill({ status, lang = "en" }: { status: OrderStatus | string; lang?: Lang }) {
+  return <Badge tone={STATUS_TONE[status] ?? "neutral"}>{DICT[`status.${status}`] ? t(`status.${status}`, lang) : status.replace("_", " ")}</Badge>;
 }
 
 export function Skeleton({ className }: { className?: string }) {
@@ -91,28 +96,28 @@ export function Money({ p, className }: { p: Paise; className?: string }) {
   return <span className={cn("tabular-nums", className)}>{formatINR(p)}</span>;
 }
 
-/** The visible commission split shown on every order. */
-export function SplitBreakdown({ gross, commission, payout, bps, refunded, compact, inline }: { gross: Paise; commission: Paise; payout: Paise; bps?: number; refunded?: Paise; compact?: boolean; inline?: boolean }) {
+/** The visible commission split shown on every order. Pass `lang` to show it in Hindi. */
+export function SplitBreakdown({ gross, commission, payout, bps, refunded, compact, inline, lang = "en" }: { gross: Paise; commission: Paise; payout: Paise; bps?: number; refunded?: Paise; compact?: boolean; inline?: boolean; lang?: Lang }) {
   const pct = gross ? (commission / gross) * 100 : 0;
   if (inline)
     return (
       <p className="text-sm text-muted tabular-nums">
-        {formatINR(gross)} total · platform fee {formatINR(commission)}{bps !== undefined && ` (${bpsToPct(bps)})`} · <span className="font-medium text-fg">seller gets {formatINR(payout)}</span>
-        {!!refunded && <span className="text-bad"> · refunded</span>}
+        {t("checkout.split.totalInline", lang, { amount: formatINR(gross) })} · {t("checkout.split.feeInline", lang, { amount: formatINR(commission) })}{bps !== undefined && ` (${bpsToPct(bps)})`} · <span className="font-medium text-fg">{t("checkout.split.sellerGets", lang, { amount: formatINR(payout) })}</span>
+        {!!refunded && <span className="text-bad"> · {t("checkout.split.refunded", lang)}</span>}
       </p>
     );
   return (
     <div className={cn("rounded-xl border border-line bg-surface2 p-3 text-sm", compact && "p-2 text-xs")}>
-      <div className="mb-2 flex h-2 overflow-hidden rounded-full bg-line" role="img" aria-label={`Platform commission ${pct.toFixed(0)}% of order`}>
+      <div className="mb-2 flex h-2 overflow-hidden rounded-full bg-line" role="img" aria-label={t("checkout.split.aria", lang, { pct: pct.toFixed(0) })}>
         <div className="bg-accent" style={{ width: `${pct}%` }} />
         <div className="bg-ok" style={{ width: `${100 - pct}%` }} />
       </div>
       <dl className="grid grid-cols-3 gap-2">
-        <div><dt className="text-muted">Order total</dt><dd className="font-semibold tabular-nums">{formatINR(gross)}</dd></div>
-        <div><dt className="flex items-center gap-1 text-muted"><span className="size-2 rounded-full bg-accent" />Platform fee{bps !== undefined && ` (${bpsToPct(bps)})`}</dt><dd className="font-semibold tabular-nums">{formatINR(commission)}</dd></div>
-        <div><dt className="flex items-center gap-1 text-muted"><span className="size-2 rounded-full bg-ok" />Seller payout</dt><dd className="font-semibold tabular-nums">{formatINR(payout)}</dd></div>
+        <div><dt className="text-muted">{t("checkout.split.orderTotal", lang)}</dt><dd className="font-semibold tabular-nums">{formatINR(gross)}</dd></div>
+        <div><dt className="flex items-center gap-1 text-muted"><span className="size-2 rounded-full bg-accent" />{t("checkout.split.fee", lang)}{bps !== undefined && ` (${bpsToPct(bps)})`}</dt><dd className="font-semibold tabular-nums">{formatINR(commission)}</dd></div>
+        <div><dt className="flex items-center gap-1 text-muted"><span className="size-2 rounded-full bg-ok" />{t("checkout.split.payout", lang)}</dt><dd className="font-semibold tabular-nums">{formatINR(payout)}</dd></div>
       </dl>
-      {!!refunded && <p className="mt-2 text-bad">Refunded {formatINR(refunded)}; commission reversed, payout reversed.</p>}
+      {!!refunded && <p className="mt-2 text-bad">{t("checkout.split.refundedNote", lang, { amount: formatINR(refunded) })}</p>}
     </div>
   );
 }

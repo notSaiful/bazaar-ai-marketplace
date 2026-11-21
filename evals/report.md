@@ -1,6 +1,6 @@
 # Eval & invariant report
 
-Generated 2026-11-21T13:24:48.045Z · 123 checks · **123 passed, 0 failed**
+Generated 2026-11-21T15:01:37.644Z · 143 checks · **143 passed, 0 failed**
 
 | Group | Passed | Total |
 |---|---|---|
@@ -18,6 +18,8 @@ Generated 2026-11-21T13:24:48.045Z · 123 checks · **123 passed, 0 failed**
 | persistence | 9 | 9 |
 | relevance | 3 | 3 |
 | reviews | 9 | 9 |
+| i18n | 7 | 7 |
+| samples | 13 | 13 |
 
 All checks passed.
 
@@ -81,7 +83,7 @@ All checks passed.
 - ✅ [search] golden: “achaar”
 - ✅ [search] golden: “kurtaa”
 - ✅ [search] golden hit-rate ≥ 90% (18/18)
-- ✅ [search] p95 latency < 150 ms (NFR-03) (p95=2.30ms)
+- ✅ [search] p95 latency < 150 ms (NFR-03) (p95=2.54ms)
 - ✅ [search] price filter parsed from “under 500”
 - ✅ [search] flagged listing never appears in search
 - ✅ [agent] price/stock/budget accuracy: “diwali gift 2000 tak maa ke liye”
@@ -124,7 +126,7 @@ All checks passed.
 - ✅ [listing] tiny/blank photo prompts a retake
 - ✅ [listing] draft has Hindi + English copy and a price hint, but no final price field
 - ✅ [persistence] replaying the mutation log on a fresh seed reproduces the exact state (18 logged actions)
-- ✅ [persistence] log fits the signed cookie budget (970 bytes in 1 cookie(s))
+- ✅ [persistence] log fits the signed cookie budget (958 bytes in 1 cookie(s))
 - ✅ [persistence] cookie round-trip returns the same log
 - ✅ [persistence] tampered cookie is rejected (ignored, never trusted)
 - ✅ [persistence] seed order ids are deterministic across cold starts (grp_seed_NN)
@@ -143,5 +145,25 @@ All checks passed.
 - ✅ [reviews] admin can remove a held review
 - ✅ [reviews] reviews persist across instances (replayed from the cookie log)
 - ✅ [reviews] reviews never touch the ledger (books still balance)
+- ✅ [i18n] every phrase has English and Hindi text (485 phrases)
+- ✅ [i18n] every Hindi translation is written in Devanagari
+- ✅ [i18n] placeholders like {n} match between English and Hindi
+- ✅ [i18n] client components only use keys that exist in the dictionary
+- ✅ [i18n] generated client key list is up to date (212 keys; run npx tsx scripts/client-keys.ts)
+- ✅ [i18n] shoppers get only client phrases in the active language, no seller phrases
+- ✅ [i18n] t() fills placeholders and falls back to English, then to the key
+- ✅ [samples] reads the real duration from an MP4 header (15.0 s) ({"ok":true,"mime":"video/mp4","durationSec":15})
+- ✅ [samples] reads MOV with a 64-bit movie header and moov at the end ({"ok":true,"mime":"video/quicktime","durationSec":42})
+- ✅ [samples] rejects over 60 s, under 3 s, audio-only, a PNG renamed .mp4, a wrong declared type, truncated and oversized files (long:too_long short:too_short audio:no_video png:type declared:type trunc:unreadable big:too_big)
+- ✅ [samples] poster must be a real JPEG/WebP/PNG under the size limit
+- ✅ [samples] demo feed has 6 seeded ads, all with a video and poster
+- ✅ [samples] rejects another seller's product, hidden products, unapproved shops, >60 s, oversized, wrong type, bad storage keys and bad captions (other:product hidden:product_hidden pending:not_active long:too_long big:too_big mime:type key:key short:caption_short longCap:caption_long)
+- ✅ [samples] valid ad goes live with a cleaned caption and points at the media route
+- ✅ [samples] prompt-injection and link captions are held: not in the feed, queued for admin
+- ✅ [samples] only an admin can publish a held ad; sellers can only remove their own
+- ✅ [samples] suspending a seller removes their ads from the feed
+- ✅ [samples] ads and moderation decisions persist across instances (replayed from the cookie log)
+- ✅ [samples] ads never touch the ledger (books still balance)
 - ✅ [ledger] ledger reconciles to ₹0.00 after the whole suite (42 events)
 - ✅ [persistence] cart price API exposes no bank, GSTIN or commission fields (P1-4)
+- ✅ [samples] media route serves video with Range support (200, 206, suffix range, 416) and 404s unknown keys (200,206,206,416,404,404)

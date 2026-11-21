@@ -1,0 +1,152 @@
+import type { Dict } from "../i18n-core";
+
+/** Customer storefront: home, search, product page, reviews, wishlist, store pages, assistant. */
+export const shop: Dict = {
+  // Shared bits
+  "shop.all": { en: "All", hi: "सभी" },
+  "shop.unknown": { en: "Unknown", hi: "अज्ञात" },
+  "shop.nProducts": { en: "{n} products", hi: "{n} उत्पाद" },
+  "shop.soldOut": { en: "Sold out", hi: "बिक गया" },
+  "shop.soldBy": { en: "Sold by {name}", hi: "विक्रेता: {name}" },
+  "shop.priceUnder": { en: "Under ₹{n}", hi: "₹{n} से कम" },
+  "shop.rating.one": { en: "{n} rating", hi: "{n} रेटिंग" },
+  "shop.rating.many": { en: "{n} ratings", hi: "{n} रेटिंग" },
+  "shop.review.one": { en: "{n} review", hi: "{n} रिव्यू" },
+  "shop.review.many": { en: "{n} reviews", hi: "{n} रिव्यू" },
+  "shop.stars.label": { en: "{v} out of 5 stars", hi: "5 में से {v} स्टार" },
+  "shop.noProducts": { en: "No products yet", hi: "अभी कोई उत्पाद नहीं" },
+
+  // Home
+  "shop.home.stats": { en: "{products} handmade products · {makers} makers · free delivery", hi: "{products} हस्तनिर्मित उत्पाद · {makers} कारीगर · मुफ़्त डिलीवरी" },
+  "shop.home.tryHint": { en: "Try “diwali ke liye diya”, “sardi ke liye shawl” or tap ✨ to ask the assistant.", hi: "“diwali ke liye diya”, “sardi ke liye shawl” जैसा कुछ खोजें या असिस्टेंट से पूछने के लिए ✨ दबाएँ।" },
+  "shop.home.byCategory": { en: "Shop by category", hi: "श्रेणी के अनुसार खरीदें" },
+  "shop.home.new": { en: "What's new", hi: "नया क्या है" },
+  "shop.home.viewStore": { en: "View store", hi: "दुकान देखें" },
+  "shop.home.how": { en: "How Bazaar works", hi: "Bazaar कैसे काम करता है" },
+  "shop.home.step1.title": { en: "Search the way you talk", hi: "जैसे बोलते हैं, वैसे खोजें" },
+  "shop.home.step1.body": { en: "English, Hindi or Hinglish. “diwali ke liye diya” just works.", hi: "अंग्रेज़ी, हिंदी या हिंग्लिश में। “diwali ke liye diya” लिखकर भी खोज सकते हैं।" },
+  "shop.home.step2.title": { en: "One cart, many makers", hi: "एक कार्ट, कई कारीगर" },
+  "shop.home.step2.body": { en: "Add from any number of independent sellers and pay once.", hi: "कितने भी स्वतंत्र विक्रेताओं से सामान जोड़ें और एक ही बार भुगतान करें।" },
+  "shop.home.step3.title": { en: "Track every parcel", hi: "हर पार्सल ट्रैक करें" },
+  "shop.home.step3.body": { en: "Each maker ships their part. Follow each one from your orders.", hi: "हर कारीगर अपना सामान खुद भेजता है। अपने ऑर्डर में हर पार्सल ट्रैक करें।" },
+  "shop.home.ctaTitle": { en: "Pay once. Support every maker in your cart.", hi: "एक बार भुगतान करें। अपने कार्ट के हर कारीगर का साथ दें।" },
+  "shop.home.ctaBody": { en: "Free delivery, transparent commission, and an assistant that speaks Hinglish.", hi: "मुफ़्त डिलीवरी, साफ़-साफ़ कमीशन, और हिंग्लिश समझने वाला असिस्टेंट।" },
+  "shop.home.startShopping": { en: "Start shopping", hi: "खरीदारी शुरू करें" },
+
+  // Search results
+  "shop.search.count": { en: "{n} items", hi: "{n} आइटम" },
+  "shop.search.understood": { en: "understood as {list}", hi: "समझा गया: {list}" },
+  "shop.search.under": { en: "under {price}", hi: "{price} से कम" },
+  "shop.search.removeFilter": { en: "Remove filter: {label}", hi: "फ़िल्टर हटाएँ: {label}" },
+  "shop.search.clearAll": { en: "Clear all", hi: "सभी हटाएँ" },
+  "shop.search.empty": { en: "Nothing found", hi: "कुछ नहीं मिला" },
+  "shop.search.emptyHint": { en: "Try fewer words, or something like “sardi ke liye shawl”.", hi: "कम शब्दों में खोजें, या “sardi ke liye shawl” जैसा कुछ लिखें।" },
+  "shop.search.clear": { en: "Clear search", hi: "खोज साफ़ करें" },
+  "shop.search.showing": { en: "Showing {n} of {total}", hi: "{total} में से {n} दिख रहे हैं" },
+  "shop.search.showMore": { en: "Show more", hi: "और देखें" },
+
+  // Sort and filter
+  "shop.sort.relevance": { en: "Best match", hi: "सबसे सही" },
+  "shop.sort.priceAsc": { en: "Price: low to high", hi: "कीमत: कम से ज़्यादा" },
+  "shop.sort.priceDesc": { en: "Price: high to low", hi: "कीमत: ज़्यादा से कम" },
+  "shop.sort.rating": { en: "Top rated", hi: "टॉप रेटेड" },
+  "shop.filter.button": { en: "Filters", hi: "फ़िल्टर" },
+  "shop.filter.close": { en: "Close filters", hi: "फ़िल्टर बंद करें" },
+  "shop.filter.title": { en: "Sort & filter", hi: "सॉर्ट और फ़िल्टर" },
+  "shop.filter.sortBy": { en: "Sort by", hi: "सॉर्ट करें" },
+  "shop.filter.anySeller": { en: "Any seller", hi: "कोई भी विक्रेता" },
+  "shop.filter.price": { en: "Price (₹)", hi: "कीमत (₹)" },
+  "shop.filter.minLabel": { en: "Minimum price", hi: "न्यूनतम कीमत" },
+  "shop.filter.maxLabel": { en: "Maximum price", hi: "अधिकतम कीमत" },
+  "shop.filter.min": { en: "Min", hi: "न्यूनतम" },
+  "shop.filter.max": { en: "Max", hi: "अधिकतम" },
+  "shop.filter.reset": { en: "Reset", hi: "रीसेट" },
+  "shop.filter.show": { en: "Show results", hi: "नतीजे दिखाएँ" },
+
+  // Search box
+  "shop.searchbox.label": { en: "Search products", hi: "उत्पाद खोजें" },
+  "shop.searchbox.ask": { en: "Ask the AI assistant", hi: "AI असिस्टेंट से पूछें" },
+  "shop.searchbox.none": { en: "No matches. Try “kurta”, “diya”, or “sardi ke liye shawl”.", hi: "कोई मेल नहीं मिला। “kurta”, “diya” या “sardi ke liye shawl” खोजकर देखें।" },
+  "shop.searchbox.related": { en: "Related", hi: "मिलते-जुलते" },
+  "shop.searchbox.seeAll": { en: "See all {n} results", hi: "सभी {n} नतीजे देखें" },
+
+  // Product page
+  "shop.product.meta": { en: "Product", hi: "उत्पाद" },
+  "shop.product.photo": { en: "Photo:", hi: "फ़ोटो:" },
+  "shop.product.illustrative": { en: "Illustrative image.", hi: "सांकेतिक तस्वीर।" },
+  "shop.product.preview": { en: "Preview only: this item is {status} and hidden from customers.", hi: "सिर्फ़ प्रीव्यू: यह आइटम {status} है और ग्राहकों से छिपा है।" },
+  "shop.product.delivery": { en: "Free delivery from {city}. Pay once for items from different sellers.", hi: "{city} से मुफ़्त डिलीवरी। अलग-अलग विक्रेताओं के सामान का एक ही बार भुगतान करें।" },
+  "shop.product.details": { en: "Product details", hi: "उत्पाद की जानकारी" },
+
+  // Reviews
+  "shop.reviews.title": { en: "Reviews", hi: "रिव्यू" },
+  "shop.reviews.written": { en: "{n} written", hi: "{n} लिखित" },
+  "shop.reviews.basedOne": { en: "Based on {n} rating", hi: "{n} रेटिंग के आधार पर" },
+  "shop.reviews.basedMany": { en: "Based on {n} ratings", hi: "{n} रेटिंग के आधार पर" },
+  "shop.reviews.byStar": { en: "Written reviews by star rating", hi: "स्टार रेटिंग के अनुसार लिखित रिव्यू" },
+  "shop.reviews.held": { en: "Thanks! Your review is waiting for a quick check by our team before it appears.", hi: "धन्यवाद! आपका रिव्यू दिखने से पहले हमारी टीम उसे एक बार जाँचेगी।" },
+  "shop.reviews.thanks": { en: "Thanks for reviewing this product.", hi: "इस उत्पाद का रिव्यू करने के लिए धन्यवाद।" },
+  "shop.reviews.switch": { en: "Switch to Shopping to write a review.", hi: "रिव्यू लिखने के लिए “खरीदार” भूमिका चुनें।" },
+  "shop.reviews.none": { en: "No written reviews yet. Be the first to share what you think.", hi: "अभी तक कोई लिखित रिव्यू नहीं है। अपनी राय बताने वाले पहले व्यक्ति बनें।" },
+  "shop.reviews.verified": { en: "Verified purchase", hi: "सत्यापित खरीदारी" },
+
+  // Review form
+  "shop.rf.title": { en: "Write a review", hi: "रिव्यू लिखें" },
+  "shop.rf.posting": { en: "Posting…", hi: "पोस्ट हो रहा है…" },
+  "shop.rf.post": { en: "Post review", hi: "रिव्यू पोस्ट करें" },
+  "shop.rf.yourRating": { en: "Your rating", hi: "आपकी रेटिंग" },
+  "shop.rf.star.one": { en: "{n} star", hi: "{n} स्टार" },
+  "shop.rf.star.many": { en: "{n} stars", hi: "{n} स्टार" },
+  "shop.rf.l1": { en: "Poor", hi: "खराब" },
+  "shop.rf.l2": { en: "Fair", hi: "ठीक-ठाक" },
+  "shop.rf.l3": { en: "Good", hi: "अच्छा" },
+  "shop.rf.l4": { en: "Very good", hi: "बहुत अच्छा" },
+  "shop.rf.l5": { en: "Excellent", hi: "शानदार" },
+  "shop.rf.name": { en: "Name shown with your review", hi: "रिव्यू के साथ दिखने वाला नाम" },
+  "shop.rf.text": { en: "Your review", hi: "आपका रिव्यू" },
+  "shop.rf.placeholder": { en: "Quality, fit, packing, delivery… English, Hindi or Hinglish is fine.", hi: "क्वालिटी, फ़िटिंग, पैकिंग, डिलीवरी… हिंदी, अंग्रेज़ी या हिंग्लिश, कुछ भी चलेगा।" },
+  // Server messages from submitReviewAction / store.addReview (English text arrives, mapped to these keys in review-form.tsx)
+  "shop.rf.live": { en: "Thanks! Your review is live.", hi: "धन्यवाद! आपका रिव्यू अब दिख रहा है।" },
+  "shop.rf.tooFast": { en: "You're posting reviews very fast. Please wait a minute.", hi: "आप बहुत जल्दी-जल्दी रिव्यू पोस्ट कर रहे हैं। कृपया एक मिनट रुकें।" },
+  "shop.rf.unavailable": { en: "This product is not available for reviews.", hi: "इस उत्पाद पर रिव्यू नहीं दिया जा सकता।" },
+  "shop.rf.chooseRating": { en: "Choose a rating from 1 to 5 stars.", hi: "1 से 5 स्टार के बीच रेटिंग चुनें।" },
+  "shop.rf.nameLength": { en: "Enter a name between 2 and 40 characters.", hi: "2 से 40 अक्षरों के बीच नाम लिखें।" },
+  "shop.rf.tooShort": { en: "Write at least 10 characters about the product.", hi: "उत्पाद के बारे में कम से कम 10 अक्षर लिखें।" },
+  "shop.rf.tooLong": { en: "Keep the review under 600 characters.", hi: "रिव्यू 600 अक्षरों से कम रखें।" },
+  "shop.rf.already": { en: "You have already reviewed this product.", hi: "आप इस उत्पाद का रिव्यू पहले ही कर चुके हैं।" },
+
+  // Wishlist
+  "shop.wish.saved.one": { en: "{n} saved item", hi: "{n} सेव किया गया आइटम" },
+  "shop.wish.saved.many": { en: "{n} saved items", hi: "{n} सेव किए गए आइटम" },
+  "shop.wish.empty": { en: "Nothing saved yet", hi: "अभी कुछ सेव नहीं किया" },
+  "shop.wish.emptyHint": { en: "Tap the heart on any product to keep it here for later.", hi: "किसी भी उत्पाद पर दिल का निशान दबाएँ, वह बाद के लिए यहाँ सेव हो जाएगा।" },
+  "shop.wish.browse": { en: "Browse products", hi: "उत्पाद देखें" },
+  "shop.wish.remove": { en: "Remove {title} from wishlist", hi: "{title} को पसंदीदा से हटाएँ" },
+  "shop.wish.save": { en: "Save {title} to wishlist", hi: "{title} को पसंदीदा में सेव करें" },
+
+  // Photo credits
+  "shop.credits.sub": { en: "Product photos are openly licensed images found through Openverse, cropped to fit. They illustrate the kind of item listed and are not photos of the exact product.", hi: "उत्पादों की फ़ोटो Openverse से ली गई खुले लाइसेंस वाली तस्वीरें हैं, जिन्हें फ़िट करने के लिए क्रॉप किया गया है। ये सिर्फ़ यह दिखाती हैं कि सामान किस तरह का है, ये असली उत्पाद की फ़ोटो नहीं हैं।" },
+  "shop.credits.by": { en: "by {name}", hi: "{name} द्वारा" },
+
+  // Bottom nav
+  "shop.nav.openCart": { en: "Open cart, {n} items", hi: "कार्ट खोलें, {n} आइटम" },
+
+  // Assistant
+  "shop.assistant.ask": { en: "Ask for help", hi: "मदद लें" },
+  "shop.assistant.greeting": { en: "Namaste! Tell me what you need and I'll find it and build a cart. Prices and stock are always live.", hi: "नमस्ते! बताइए आपको क्या चाहिए, मैं ढूँढकर आपका कार्ट तैयार कर दूँगा। कीमतें और स्टॉक हमेशा लाइव रहते हैं।" },
+  "shop.assistant.error": { en: "Sorry, something went wrong.", hi: "माफ़ कीजिए, कुछ गड़बड़ हो गई।" },
+  "shop.assistant.offline": { en: "I couldn't reach the catalogue just now. Please try again.", hi: "अभी कैटलॉग तक नहीं पहुँच पाया। कृपया फिर से कोशिश करें।" },
+  "shop.assistant.title": { en: "Bazaar AI assistant", hi: "Bazaar AI असिस्टेंट" },
+  "shop.assistant.langs": { en: "Hindi, English or Hinglish", hi: "हिंदी, अंग्रेज़ी या हिंग्लिश" },
+  "shop.assistant.close": { en: "Close assistant", hi: "असिस्टेंट बंद करें" },
+  "shop.assistant.onlyLeft": { en: "only {n} left", hi: "सिर्फ़ {n} बचे" },
+  "shop.assistant.inStock": { en: "in stock", hi: "स्टॉक में" },
+  "shop.assistant.why": { en: "Why: {why}", hi: "क्यों: {why}" },
+  "shop.assistant.add": { en: "Add", hi: "जोड़ें" },
+  "shop.assistant.addAll": { en: "Add all to cart · {total}", hi: "सब कार्ट में डालें · {total}" },
+  "shop.assistant.trace": { en: "How I found this", hi: "मैंने यह कैसे ढूँढा" },
+  "shop.assistant.busy": { en: "Searching catalogue…", hi: "कैटलॉग में खोज रहा हूँ…" },
+  "shop.assistant.message": { en: "Message", hi: "संदेश" },
+  "shop.assistant.placeholder": { en: "e.g. 1500 tak ka gift for papa", hi: "जैसे: 1500 tak ka gift for papa" },
+  "shop.assistant.send": { en: "Send", hi: "भेजें" },
+};

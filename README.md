@@ -27,6 +27,18 @@ Serverless instances do not share memory, so nothing important lives there:
 
 Set `DEMO_STATE_SECRET` in production. Set `DEMO_MODE=off` to disable the role switcher once real auth is in place. Cookies are HttpOnly (+ Secure in production).
 
+## Samples (short video ads)
+Buyers get a vertical, one-ad-per-screen feed at `/samples`; sellers upload at `/seller/ads`. The server re-checks every upload: real MP4/MOV signature (`ftyp`), duration read from the movie header (3 to 60 s), a video track, size, the product belongs to the seller, and the caption is cleaned. Captions with prompt-injection patterns or links are held for the admin queue.
+
+**Demo limits.** Video bytes are kept in the serving instance's memory (`src/lib/media-store.ts`), so an upload plays on that instance only and disappears on a cold start (other instances show the poster). Uploads are capped at 4 MB because Vercel functions accept about 4.5 MB request bodies. The six demo ads in `public/samples/` are slow-zoom clips made from the products' openly licensed photos (see `/credits`).
+
+**Shared, durable uploads (Supabase Storage):**
+1. Create a private bucket `ad-videos` (and `ad-posters`), with RLS so only the owning seller can write under `sellers/<seller_id>/…`.
+2. Add an `ads` table (id, seller_id, product_id, storage_path, poster_path, caption, duration_sec, size_bytes, mime, status `live|held|removed`, held_reason, created_at) with RLS: sellers manage their own rows, buyers read `status = 'live'` joined to live products of active sellers.
+3. Upload flow: `POST /api/seller/ads/sign` checks the seller and product, then returns a **signed upload URL** (`createSignedUploadUrl`). The browser uploads straight to Storage (bypasses the 4.5 MB function limit, so the cap can be ~50 MB). Then `POST /api/seller/ads/confirm` downloads the file's first and last bytes (Range) to run the same `checkVideo` header checks, deletes the object if it fails, and inserts the row (held or live).
+4. Feed: serve videos through signed read URLs or a public CDN path; optionally transcode to HLS/720p with a worker (e.g. a Supabase Edge Function + a video service) for smaller, adaptive streams.
+5. Moderation and audit stay as they are; swap `createAd`/`moderateAd` in `src/lib/store.ts` for Supabase calls behind the same signatures.
+
 ## Demo roles (no sign-in friction)
 Use the **view switcher** in the header: Shopping · Selling (pick which seller you act as) · Admin. The footer has a **हिंदी / English** toggle. Supabase Auth is wired as a prepared client (`src/lib/supabase.ts`), not enforced in the prototype.
 

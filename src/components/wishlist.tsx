@@ -3,6 +3,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useT } from "./lang";
 
 interface Ctx { ids: string[]; has: (id: string) => boolean; toggle: (id: string) => void }
 const WishCtx = createContext<Ctx>({ ids: [], has: () => false, toggle: () => {} });
@@ -29,13 +30,14 @@ export function WishlistProvider({ initial, children }: { initial: string[]; chi
 
 export function HeartButton({ id, title, className }: { id: string; title: string; className?: string }) {
   const { has, toggle } = useWishlist();
+  const t = useT();
   const on = has(id);
   return (
     <button
       type="button"
       onClick={() => toggle(id)}
       aria-pressed={on}
-      aria-label={on ? `Remove ${title} from wishlist` : `Save ${title} to wishlist`}
+      aria-label={on ? t("shop.wish.remove", { title }) : t("shop.wish.save", { title })}
       className={cn("grid size-9 place-items-center rounded-full bg-surface/90 shadow-sm backdrop-blur transition hover:scale-110 active:scale-95", className)}
     >
       <Heart className={cn("size-4 transition", on ? "fill-bad text-bad" : "text-fg")} />

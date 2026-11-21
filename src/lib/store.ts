@@ -5,10 +5,13 @@
  * event is double-entry (debits == credits). State lives on globalThis so route handlers and
  * server actions share it. Swap this module for a Supabase repository without touching callers.
  */
-import { PRODUCT_SEED, SELLER_SEED } from "./catalog";
+import { AD_SEED, PRODUCT_SEED, SELLER_SEED } from "./catalog";
+import { KEY_RE } from "./media-store";
+import { MAX_CAPTION, MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS, MIN_VIDEO_SECONDS, VIDEO_MIME } from "./video";
 import { lineCommission, type Paise } from "./money";
 import { hid, requestStore, decodeLog, type LogEntry } from "./state";
 import type {
+  Ad,
   Review,
   AuditEntry,
   CartLine,
@@ -26,6 +29,7 @@ import type {
 interface DB {
   sellers: Seller[];
   products: Product[];
+  ads: Ad[];
   groups: OrderGroup[];
   orders: Order[];
   ledger: LedgerEntry[];
@@ -59,7 +63,7 @@ const nowISO = () => new Date(clock()).toISOString();
 const uid = (d: DB, p: string) => `${p}_${(++d.seq).toString(36)}`;
 
 function emptyDB(): DB {
-  return { sellers: structuredClone(SELLER_SEED), products: structuredClone(PRODUCT_SEED), groups: [], orders: [], ledger: [], payouts: [], audit: [], notifications: [], processedPayments: new Set(), seq: 100, entrySeq: 0 };
+  return { sellers: structuredClone(SELLER_SEED), products: structuredClone(PRODUCT_SEED), ads: structuredClone(AD_SEED), groups: [], orders: [], ledger: [], payouts: [], audit: [], notifications: [], processedPayments: new Set(), seq: 100, entrySeq: 0 };
 }
 
 function seededDB(): DB {
@@ -181,6 +185,8 @@ export interface PricedGroup {
   lines: PricedLine[];
   subtotal: Paise;
   eta: string;
+  /** Same delivery estimate as an ISO date, so the UI can format it per language. */
+  etaAt: string;
 }
 export interface PricedCart {
   groups: PricedGroup[];
@@ -210,7 +216,7 @@ export function priceCart(lines: CartLine[]): PricedCart {
       issues.push(`${p.title}: only ${p.stock} left, quantity adjusted`);
     }
     const seller = getSeller(p.sellerId)!;
-    const g = bySeller.get(seller.id) ?? { seller, lines: [], subtotal: 0, eta: etaFor(seller.city) };
+    const g = bySeller.get(seller.id) ?? { seller, lines: [], subtotal: 0, eta: etaFor(seller.city), etaAt: etaAt(seller.city) };
     g.lines.push({ product: p, qty, lineTotal: p.price * qty, issue });
     g.subtotal += p.price * qty;
     bySeller.set(seller.id, g);
@@ -224,10 +230,10 @@ export function priceCart(lines: CartLine[]): PricedCart {
   };
 }
 
+const etaDays = (city: string) => (["Jaipur", "Moradabad"].includes(city) ? 3 : 4);
+const etaAt = (city: string) => new Date(clock() + etaDays(city) * 864e5).toISOString();
 function etaFor(city: string) {
-  const days = ["Jaipur", "Moradabad"].includes(city) ? 3 : 4;
-  const d = new Date(clock() + days * 864e5);
-  return d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+  return new Date(etaAt(city)).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
 }
 
 export function checkPincode(pin: string): { ok: boolean; reason?: string } {
@@ -724,17 +730,76 @@ function moderateReview_(productId: string, reviewId: string, decision: "publish
   return { ok: true as const };
 }
 
+/* ---------------- Samples: short video ads (caption is untrusted seller input) ---------------- */
+
+export interface AdInput { productId: string; caption: string; durationSec: number; mime: string; sizeBytes: number; videoKey: string; posterKey?: string }
+type AdError = { error: string; code: string };
+const adErr = (code: string, error: string): AdError => ({ error, code });
+/** Captions with prompt-injection patterns or links (a common scam lure) wait for an admin. */
+const LINK = /(https?:\/\/|www\.|\b[a-z0-9-]+\.(com|in|net|org|xyz|link|ly)\b)/i;
+
+/** Ads customers can see: live, for a visible product of an active seller. */
+export function feedAds() {
+  return db().ads.filter((a) => {
+    if (a.status !== "live") return false;
+    const p = getProduct(a.productId);
+    return !!p && isVisible(p) && p.sellerId === a.sellerId;
+  });
+}
+export const sellerAds = (sellerId: string) => db().ads.filter((a) => a.sellerId === sellerId && a.status !== "removed");
+
+function createAd_(sellerId: string, input: AdInput) {
+  const seller = getSeller(sellerId);
+  if (!seller) return adErr("seller", "Seller not found");
+  if (seller.status !== "active") return adErr("not_active", "Your shop must be approved before posting ads.");
+  const p = getProduct(input.productId);
+  if (!p || p.sellerId !== sellerId) return adErr("product", "Choose one of your own products.");
+  if (!isVisible(p)) return adErr("product_hidden", "The product must be live on the storefront.");
+  if (!(VIDEO_MIME as readonly string[]).includes(input.mime)) return adErr("type", "Upload an MP4 or MOV video.");
+  if (!(input.sizeBytes > 0) || input.sizeBytes > MAX_VIDEO_BYTES) return adErr("too_big", "The video file is too large.");
+  if (!(input.durationSec >= MIN_VIDEO_SECONDS) || input.durationSec > MAX_VIDEO_SECONDS) return adErr("too_long", "Videos must be 3 to 60 seconds long.");
+  if (!KEY_RE.test(input.videoKey) || !input.videoKey.startsWith("vid_") || (input.posterKey && (!KEY_RE.test(input.posterKey) || !input.posterKey.startsWith("img_")))) return adErr("key", "Upload failed. Please try again.");
+  const caption = cleanText(input.caption, MAX_CAPTION);
+  if (caption.length < 3) return adErr("caption_short", "Write a short caption (at least 3 characters).");
+  if (caption.length > MAX_CAPTION) return adErr("caption_long", "Keep the caption under 150 characters.");
+  const reason = looksLikeInjection(caption) ? "Caption contains instructions aimed at AI agents (prompt-injection pattern)." : LINK.test(caption) ? "Caption contains a link or web address." : undefined;
+  const ad: Ad = {
+    // Time + sequence: unique even for two uploads in the same millisecond, and deterministic on replay.
+    id: `ad_u${clock().toString(36)}_${db().ads.length.toString(36)}`,
+    sellerId, productId: p.id, caption,
+    video: `/api/media/${input.videoKey}`,
+    poster: input.posterKey ? `/api/media/${input.posterKey}` : undefined,
+    durationSec: Math.round(input.durationSec * 10) / 10, mime: input.mime, sizeBytes: input.sizeBytes,
+    status: reason ? "held" : "live", heldReason: reason, createdAt: nowISO(),
+  };
+  db().ads.unshift(ad);
+  return { ok: true as const, ad, held: !!reason };
+}
+
+/** Admin decision on a held ad, or a seller removing their own ad. */
+function moderateAd_(adId: string, decision: "publish" | "remove", actor: string) {
+  const a = db().ads.find((x) => x.id === adId);
+  if (!a) return { error: "Ad not found" };
+  if (actor !== "admin" && actor !== a.sellerId) return { error: "Not your ad" };
+  if (decision === "publish" && actor !== "admin") return { error: "Only an admin can publish a held ad" };
+  if (decision === "remove") a.status = "removed";
+  else { a.status = "live"; delete a.heldReason; }
+  logAudit(actor, `ad_${decision}`, adId);
+  return { ok: true as const };
+}
+
 /* ---------------- anomalies (fraud / review queue) ---------------- */
 
 export function anomalies() {
   const d = db();
-  const out: { id: string; kind: string; target: string; productId?: string; reviewId?: string; held?: boolean; sellerId?: string; reason: string }[] = [];
+  const out: { id: string; kind: string; target: string; productId?: string; reviewId?: string; adId?: string; held?: boolean; sellerId?: string; reason: string }[] = [];
   for (const p of d.products) {
     if (p.status === "flagged") out.push({ id: `f_${p.id}`, kind: "listing", target: p.title, productId: p.id, sellerId: p.sellerId, reason: p.flagReason ?? "Flagged for review" });
     for (const [i, r] of p.reviews.entries()) if (r.held || INJECTION.test(r.text)) out.push({ id: `r_${r.id ?? `${p.id}_${i}`}`, kind: "review", target: p.title, productId: p.id, reviewId: r.id, sellerId: p.sellerId, held: !!r.held, reason: `Review by ${r.author} contains instructions aimed at AI agents.` });
   }
   const byCust = new Map<string, number>();
   for (const g of d.groups) if (g.status === "paid" && clock() - new Date(g.createdAt).getTime() < 2 * 864e5) byCust.set(g.customerId, (byCust.get(g.customerId) ?? 0) + 1);
+  for (const ad of d.ads) if (ad.status === "held") out.push({ id: `a_${ad.id}`, kind: "ad", target: getProduct(ad.productId)?.title ?? ad.productId, productId: ad.productId, adId: ad.id, held: true, sellerId: ad.sellerId, reason: ad.heldReason ?? "Held for review" });
   for (const [c, n] of byCust) if (n >= 4) out.push({ id: `c_${c}`, kind: "buyer", target: c, reason: `${n} paid orders in 48 hours (velocity check).` });
   return out;
 }
@@ -829,6 +894,8 @@ export const setStock = logged("setStock", setStock_);
 export const archiveProduct = logged("archiveProduct", archiveProduct_);
 export const addReview = logged("addReview", addReview_);
 export const moderateReview = logged("moderateReview", moderateReview_);
+export const createAd = logged("createAd", createAd_);
+export const moderateAd = logged("moderateAd", moderateAd_);
 export const setSellerStatus = logged("setSellerStatus", setSellerStatus_);
 export const setCommission = logged("setCommission", setCommission_);
 export const setProductStatus = logged("setProductStatus", setProductStatus_);

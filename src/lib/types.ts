@@ -60,6 +60,24 @@ export interface Product {
 }
 
 /** Customer review. Text and author are untrusted input: rendered as text only, never fed to AI as instructions. */
+/** Short vertical video ad ("Samples" feed). Caption is untrusted seller input: plain text only. */
+export interface Ad {
+  id: string;
+  sellerId: string;
+  productId: string;
+  /** Public URL of the video (static file for seeded ads, /api/media/<key> for uploads). */
+  video: string;
+  poster?: string;
+  caption: string;
+  captionHi?: string;
+  durationSec: number;
+  mime?: string;
+  sizeBytes?: number;
+  status: "live" | "held" | "removed";
+  heldReason?: string;
+  createdAt: string;
+}
+
 export interface Review {
   id?: string;
   author: string;

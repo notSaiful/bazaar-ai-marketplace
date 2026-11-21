@@ -11,7 +11,8 @@ import { ThemeToggle } from "./theme-toggle";
 import { AccountMenu } from "./account-menu";
 import { MobileNav } from "./side-nav";
 import { WishlistCount } from "./wishlist";
-import { Heart } from "lucide-react";
+import { Clapperboard, Heart } from "lucide-react";
+import { LangToggle } from "./lang-toggle";
 
 export async function Header() {
   const s = await getSession();
@@ -27,16 +28,22 @@ export async function Header() {
         {shop ? (
           <HeaderSearch placeholder={t("search_ph", s.lang)} />
         ) : (
-          <p className="hidden text-sm text-muted sm:block">{s.role === "seller" ? "Seller workspace" : "Marketplace admin"}</p>
+          <p className="hidden text-sm text-muted sm:block">{t(s.role === "seller" ? "role.sellerWorkspace" : "role.marketplaceAdmin", s.lang)}</p>
         )}
         <div className="ml-auto flex items-center gap-2">
           <RoleSwitcher role={s.role} sellerId={s.sellerId} sellers={sellers} lang={s.lang} />
+          <LangToggle lang={s.lang} compact />
           <ThemeToggle />
           <div className={shop ? "hidden md:block" : undefined}>
-            <AccountMenu name={accountName(s.role, s.sellerId)} role={s.role} ordersLabel={t("orders", s.lang)} />
+            <AccountMenu name={accountName(s.role, s.sellerId)} role={s.role} ordersLabel={t("nav.myOrders", s.lang)} />
           </div>
           {shop && (
-            <Link href="/wishlist" aria-label="Wishlist" className="relative hidden size-9 place-items-center rounded-lg border border-line bg-surface transition hover:bg-surface2 md:grid">
+            <Link href="/samples" className="hidden h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 text-sm font-medium transition hover:bg-surface2 md:flex">
+              <Clapperboard className="size-4" aria-hidden />{t("samples.tab", s.lang)}
+            </Link>
+          )}
+          {shop && (
+            <Link href="/wishlist" aria-label={t("nav.wishlist", s.lang)} className="relative hidden size-9 place-items-center rounded-lg border border-line bg-surface transition hover:bg-surface2 md:grid">
               <Heart className="size-4" /><WishlistCount />
             </Link>
           )}

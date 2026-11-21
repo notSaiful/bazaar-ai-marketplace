@@ -39,33 +39,29 @@ export default async function Home() {
   const newest = Array.from({ length: 6 }, (_, i) => byCat[i % byCat.length][Math.floor(i / byCat.length)]).filter(Boolean);
   const popular = [...live].sort((a, b) => b.rating - a.rating).slice(0, 8);
   const makers = sellers.filter((x) => x.status === "active").map((m) => ({ m, items: live.filter((p) => p.sellerId === m.id) })).filter((x) => x.items.length);
-  const steps = [
-    { title: "Search the way you talk", body: "English, Hindi or Hinglish. “diwali ke liye diya” just works." },
-    { title: "One cart, many makers", body: "Add from any number of independent sellers and pay once." },
-    { title: "Track every parcel", body: "Each maker ships their part. Follow each one from your orders." },
-  ];
+  const steps = [1, 2, 3].map((n) => ({ title: t(`shop.home.step${n}.title`, s.lang), body: t(`shop.home.step${n}.body`, s.lang) }));
 
   return (
     <div className="space-y-12 sm:space-y-16">
       {/* Hero: PRD storefront puts a prominent search first */}
       <section className="mx-auto max-w-3xl pt-2 text-center">
         <div className="rise mb-5 inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-2.5 py-1 text-[13px] text-muted">
-          <span className="status-dot" aria-hidden /> {live.length} handmade products · {makers.length} makers · free delivery
+          <span className="status-dot" aria-hidden /> {t("shop.home.stats", s.lang, { products: live.length, makers: makers.length })}
         </div>
         <h1 className="rise text-[36px] font-semibold leading-[1.05] tracking-tight sm:text-[52px]" style={d(60)}>{t("hero_title", s.lang)}</h1>
         <p className="rise mx-auto mt-4 max-w-xl text-base text-muted sm:text-lg" style={d(120)}>{t("hero_sub", s.lang)}</p>
         <div className="rise mx-auto mt-7 max-w-2xl text-left" style={d(180)}><SearchBox big placeholder={t("search_ph", s.lang)} /></div>
-        <p className="rise mt-3 text-xs text-muted" style={d(220)}>Try “diwali ke liye diya”, “sardi ke liye shawl” or tap ✨ to ask the assistant.</p>
+        <p className="rise mt-3 text-xs text-muted" style={d(220)}>{t("shop.home.tryHint", s.lang)}</p>
       </section>
 
       {/* Category chips */}
-      <section aria-label="Shop by category" className="rise flex justify-center" style={d(260)}>
+      <section aria-label={t("shop.home.byCategory", s.lang)} className="rise flex justify-center" style={d(260)}>
         <CategoryChips active="" hrefFor={(c) => (c ? `/search?category=${c}` : "/search")} lang={s.lang} />
       </section>
 
       {/* Popular grid */}
       <section aria-labelledby="pop">
-        <SectionHead id="pop" title={t("featured", s.lang)} href="/search" cta="View all" />
+        <SectionHead id="pop" title={t("featured", s.lang)} href="/search" cta={t("action.viewAll", s.lang)} />
         <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
           {popular.map((p, i) => (i < 4 ? <div key={p.id}><ProductCard p={p} lang={s.lang} eager={i < 2} /></div> : <div key={p.id} data-reveal style={d((i % 4) * 80)}><ProductCard p={p} lang={s.lang} defer /></div>))}
         </div>
@@ -73,7 +69,7 @@ export default async function Home() {
 
       {/* What's new: compact list rows */}
       <section aria-labelledby="new">
-        <SectionHead id="new" title="What's new" href="/search" />
+        <SectionHead id="new" title={t("shop.home.new", s.lang)} href="/search" cta={t("action.seeAll", s.lang)} />
         <Panel className="grid divide-y divide-line overflow-hidden sm:grid-cols-2 sm:divide-y-0">
           {newest.map((p, i) => (
             <Link
@@ -111,9 +107,9 @@ export default async function Home() {
                 <span className="grid size-9 shrink-0 place-items-center rounded-lg text-base" style={{ background: `hsl(${m.hue} 70% 90%)` }} aria-hidden>{m.emoji}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold tracking-tight">{m.name}</span>
-                  <span className="block truncate text-xs text-muted">{m.city} · {items.length} products · ★ {m.rating.toFixed(1)}</span>
+                  <span className="block truncate text-xs text-muted">{m.city} · {t("shop.nProducts", s.lang, { n: items.length })} · ★ {m.rating.toFixed(1)}</span>
                 </span>
-                <span className="flex items-center gap-1 rounded-md border border-line px-2 py-1 text-xs text-muted transition group-hover:border-fg/30 group-hover:text-fg">View store <ArrowUpRight className="size-3" /></span>
+                <span className="flex items-center gap-1 rounded-md border border-line px-2 py-1 text-xs text-muted transition group-hover:border-fg/30 group-hover:text-fg">{t("shop.home.viewStore", s.lang)} <ArrowUpRight className="size-3" /></span>
               </div>
             </Link>
           ))}
@@ -122,7 +118,7 @@ export default async function Home() {
 
       {/* How it works: article-style rows */}
       <section aria-labelledby="how">
-        <SectionHead id="how" title="How Bazaar works" />
+        <SectionHead id="how" title={t("shop.home.how", s.lang)} />
         <Panel className="divide-y divide-line">
           {steps.map((st, i) => (
             <div key={st.title} data-reveal="left" style={d(i * 110)} className="flex items-start gap-4 p-4 sm:items-center">
@@ -139,11 +135,11 @@ export default async function Home() {
       {/* Closing CTA */}
       <section data-reveal className="flex flex-col items-start justify-between gap-6 rounded-xl bg-accent p-8 text-accent-fg sm:flex-row sm:items-center sm:p-10">
         <div>
-          <h2 className="text-2xl font-semibold sm:text-3xl">Pay once. Support every maker in your cart.</h2>
-          <p className="mt-2 text-sm opacity-60">Free delivery, transparent commission, and an assistant that speaks Hinglish.</p>
+          <h2 className="text-2xl font-semibold sm:text-3xl">{t("shop.home.ctaTitle", s.lang)}</h2>
+          <p className="mt-2 text-sm opacity-60">{t("shop.home.ctaBody", s.lang)}</p>
         </div>
         <Link href="/search" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-lg bg-accent-fg px-5 text-sm font-medium text-accent transition hover:opacity-90">
-          Start shopping <ArrowRight className="size-4" />
+          {t("shop.home.startShopping", s.lang)} <ArrowRight className="size-4" />
         </Link>
       </section>
     </div>

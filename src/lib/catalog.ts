@@ -1,4 +1,4 @@
-import type { Product, Seller } from "./types";
+import type { Ad, Product, Seller } from "./types";
 import PHOTO_CREDITS_JSON from "./photo-credits.json";
 
 export const CATEGORIES = [
@@ -76,6 +76,16 @@ export interface PhotoCredit { title: string; creator: string; license: string; 
 export const PHOTO_CREDITS: Record<string, PhotoCredit> = PHOTO_CREDITS_JSON;
 
 export const licenseLabel = (l: string) => (l.startsWith("CC0") ? l : l.startsWith("PDM") ? "Public Domain" : `CC ${l}`);
+
+/** Demo "Samples" ads. Videos are slow-zoom clips made from each product's openly licensed photo. */
+export const AD_SEED: Ad[] = [
+  { id: "ad_01", sellerId: "s_ghar", productId: "p_09", durationSec: 16, caption: "Diwali ready ✨ Hand-cast brass diyas, polished one by one in Moradabad.", captionHi: "दिवाली की तैयारी ✨ मुरादाबाद में हाथ से ढले और एक-एक करके चमकाए गए पीतल के दीये।" },
+  { id: "ad_02", sellerId: "s_meena", productId: "p_18", durationSec: 18, caption: "Silver jhumkas that catch the light. Handmade in Hyderabad, light enough for all-day wear.", captionHi: "रोशनी में चमकते चांदी के झुमके। हैदराबाद में हाथ से बने, पूरे दिन पहनने लायक हल्के।" },
+  { id: "ad_03", sellerId: "s_rangrez", productId: "p_08", durationSec: 15, caption: "Breathable linen Nehru jacket. Tailored in Jaipur for weddings and work.", captionHi: "हवादार लिनन नेहरू जैकेट। जयपुर में सिली गई, शादी और दफ़्तर दोनों के लिए।" },
+  { id: "ad_04", sellerId: "s_chai", productId: "p_29", durationSec: 20, caption: "Raw Himalayan honey from small hill farms. Nothing added, nothing taken out.", captionHi: "पहाड़ी खेतों का कच्चा हिमालयन शहद। न कुछ मिलाया, न कुछ निकाला।" },
+  { id: "ad_05", sellerId: "s_volt", productId: "p_37", durationSec: 15, caption: "Late-night study, easy on the eyes. Dimmable LED desk lamp with a touch panel.", captionHi: "देर रात की पढ़ाई, आँखों पर आराम। टच पैनल वाला डिम होने वाला LED डेस्क लैंप।" },
+  { id: "ad_06", sellerId: "s_meena", productId: "p_20", durationSec: 17, caption: "Kundan bridal set for the big day. Made to order with care.", captionHi: "ख़ास दिन के लिए कुंदन ब्राइडल सेट। ध्यान से ऑर्डर पर बनाया जाता है।" },
+].map((a, i) => ({ ...a, video: `/samples/${a.id}.mp4`, poster: `/samples/${a.id}.webp`, mime: "video/mp4", status: "live" as const, createdAt: d(2 + i) }));
 
 export const PRODUCT_SEED: Product[] = rows.map((r, i) => {
   const [sellerId, title, titleHi, category, emoji, hue, price, mrp, stock, tags, attributes, description, descriptionHi] = r;

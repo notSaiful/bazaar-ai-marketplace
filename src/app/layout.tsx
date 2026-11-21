@@ -14,6 +14,8 @@ import { getWishlistIds } from "@/lib/wishlist";
 import { WishlistProvider } from "@/components/wishlist";
 import { BottomNav } from "@/components/bottom-nav";
 import { Suspense } from "react";
+import { LangProvider } from "@/components/lang";
+import { clientMessages, t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +34,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={s.lang} suppressHydrationWarning>
       <head><script dangerouslySetInnerHTML={{ __html: themeScript }} /></head>
       <body className="min-h-dvh antialiased">
-        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[100] focus:rounded-lg focus:bg-accent focus:px-3 focus:py-2 focus:text-accent-fg">Skip to content</a>
+        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[100] focus:rounded-lg focus:bg-accent focus:px-3 focus:py-2 focus:text-accent-fg">{t("a11y.skip", s.lang)}</a>
+        <LangProvider lang={s.lang} msgs={clientMessages(s.lang, s.role)}>
         <CartProvider>
           <WishlistProvider initial={s.role === "customer" ? await getWishlistIds() : []}>
           <div className="flex min-h-dvh">
@@ -44,19 +47,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <div className={`mx-auto grid w-full gap-8 ${shop ? "max-w-7xl" : "max-w-6xl"} px-4 py-10 sm:grid-cols-[1.4fr_1fr_1fr_auto] sm:px-8`}>
                   <div>
                     <div className="text-sm font-semibold tracking-tight">Bazaar</div>
-                    <p className="mt-1 max-w-xs text-sm text-muted">One cart, many makers. Demo mode, test payments.</p>
+                    <p className="mt-1 max-w-xs text-sm text-muted">{t("brand.tagline", s.lang)}</p>
                   </div>
-                  <nav aria-label="Footer" className="flex flex-col gap-2 text-sm">
-                    <p className="text-xs font-medium text-muted">Shop</p>
-                    <a className="hover:text-muted" href="/search">All products</a>
-                    <a className="hover:text-muted" href="/wishlist">Wishlist</a>
-                    <a className="hover:text-muted" href="/orders">Orders</a>
-                    <a className="hover:text-muted" href="/account">Account</a>
+                  <nav aria-label={t("nav.footer", s.lang)} className="flex flex-col gap-2 text-sm">
+                    <p className="text-xs font-medium text-muted">{t("nav.shop", s.lang)}</p>
+                    <a className="hover:text-muted" href="/search">{t("nav.allProducts", s.lang)}</a>
+                    <a className="hover:text-muted" href="/wishlist">{t("nav.wishlist", s.lang)}</a>
+                    <a className="hover:text-muted" href="/orders">{t("nav.orders", s.lang)}</a>
+                    <a className="hover:text-muted" href="/account">{t("nav.account", s.lang)}</a>
                   </nav>
-                  <nav aria-label="Resources" className="flex flex-col gap-2 text-sm">
-                    <p className="text-xs font-medium text-muted">Resources</p>
-                    <a className="hover:text-muted" href="/credits">Photo credits</a>
-                    <a className="hover:text-muted" href="/.well-known/ucp">For AI agents</a>
+                  <nav aria-label={t("nav.resources", s.lang)} className="flex flex-col gap-2 text-sm">
+                    <p className="text-xs font-medium text-muted">{t("nav.resources", s.lang)}</p>
+                    <a className="hover:text-muted" href="/credits">{t("nav.photoCredits", s.lang)}</a>
+                    <a className="hover:text-muted" href="/.well-known/ucp">{t("nav.forAgents", s.lang)}</a>
                     <span className="text-muted"><LangToggle lang={s.lang} /></span>
                   </nav>
                   <LiveClock />
@@ -70,6 +73,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <RevealObserver />
           </WishlistProvider>
         </CartProvider>
+        </LangProvider>
       </body>
     </html>
   );

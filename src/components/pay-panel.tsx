@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useCart } from "./cart";
 import { btn } from "./ui";
+import { useT } from "./lang";
 import { formatINR } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +13,7 @@ declare global { interface Window { Razorpay?: new (o: Record<string, unknown>) 
 export function PayPanel({ groupId, total, sellers, razorpay }: { groupId: string; total: number; sellers: { name: string; amount: number }[]; razorpay?: { keyId: string; orderId: string } }) {
   const router = useRouter();
   const { clear } = useCart();
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -48,11 +50,11 @@ export function PayPanel({ groupId, total, sellers, razorpay }: { groupId: strin
   }
   return (
     <div className="mx-auto max-w-md space-y-6 text-center">
-      <div><div className="text-sm text-muted">You pay</div><div className="text-5xl font-semibold tabular-nums">{formatINR(total)}</div></div>
+      <div><div className="text-sm text-muted">{t("checkout.pay.youPay")}</div><div className="text-5xl font-semibold tabular-nums">{formatINR(total)}</div></div>
       <ul className="space-y-1 text-sm text-muted">{sellers.map((s) => <li key={s.name} className="flex justify-between"><span>{s.name}</span><span className="tabular-nums">{formatINR(s.amount)}</span></li>)}</ul>
-      {failed && <p role="alert" className="rounded-lg bg-bad/10 px-3 py-2 text-sm text-bad">Payment failed. Your cart is safe, so you can try again.</p>}
-      <button disabled={busy} onClick={() => pay("success")} className={cn(btn("primary", "lg"), "w-full")}>{busy && <Loader2 className="size-4 animate-spin" />} Pay {formatINR(total)}</button>
-      <p className="text-xs text-muted">{razorpay ? "Razorpay test mode: UPI or card." : "Test payment, no real money moves."}{!razorpay && <> <button disabled={busy} onClick={() => pay("failure")} className="underline hover:text-fg">Simulate a failure</button></>}</p>
+      {failed && <p role="alert" className="rounded-lg bg-bad/10 px-3 py-2 text-sm text-bad">{t("checkout.pay.failed")}</p>}
+      <button disabled={busy} onClick={() => pay("success")} className={cn(btn("primary", "lg"), "w-full")}>{busy && <Loader2 className="size-4 animate-spin" />} {t("checkout.pay.payAmount", { amount: formatINR(total) })}</button>
+      <p className="text-xs text-muted">{razorpay ? t("checkout.pay.razorpayTest") : t("checkout.pay.mockNote")}{!razorpay && <> <button disabled={busy} onClick={() => pay("failure")} className="underline hover:text-fg">{t("checkout.pay.simulateFailure")}</button></>}</p>
     </div>
   );
 }

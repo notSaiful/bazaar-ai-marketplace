@@ -6,6 +6,8 @@ import { CATEGORIES } from "@/lib/catalog";
 import { btn, inputCls, ProductArt } from "./ui";
 import { cn } from "@/lib/utils";
 import type { ListingDraft } from "@/lib/ai";
+import { localizeMsg } from "@/lib/dict/seller";
+import { useLang, useT } from "./lang";
 
 export interface FormInitial {
   id?: string; title: string; titleHi: string; description: string; descriptionHi: string; category: string; tags: string; attributes: string;
@@ -14,10 +16,10 @@ export interface FormInitial {
 export const EMPTY: FormInitial = { title: "", titleHi: "", description: "", descriptionHi: "", category: "home", tags: "", attributes: "", price: "", mrp: "", stock: "10", hue: 20, emoji: "📦" };
 
 const SAMPLES = [
-  { label: "Brass diya", file: "brass-diya.jpg", emoji: "🪔", hue: 42 },
-  { label: "Cotton kurta", file: "cotton-kurta.jpg", emoji: "👘", hue: 20 },
-  { label: "Silver jhumka", file: "silver-jhumka.jpg", emoji: "✨", hue: 335 },
-  { label: "Masala chai", file: "masala-chai.jpg", emoji: "☕", hue: 30 },
+  { label: "Brass diya", key: "seller.form.sample.diya", file: "brass-diya.jpg", emoji: "🪔", hue: 42 },
+  { label: "Cotton kurta", key: "seller.form.sample.kurta", file: "cotton-kurta.jpg", emoji: "👘", hue: 20 },
+  { label: "Silver jhumka", key: "seller.form.sample.jhumka", file: "silver-jhumka.jpg", emoji: "✨", hue: 335 },
+  { label: "Masala chai", key: "seller.form.sample.chai", file: "masala-chai.jpg", emoji: "☕", hue: 30 },
 ];
 
 async function downscale(file: File): Promise<string> {
@@ -32,6 +34,8 @@ async function downscale(file: File): Promise<string> {
 }
 
 export function ProductForm({ initial = EMPTY, studio = false, canPublish = true }: { initial?: FormInitial; studio?: boolean; canPublish?: boolean }) {
+  const t = useT();
+  const lang = useLang();
   const [f, setF] = useState<FormInitial>(initial);
   const [busy, setBusy] = useState(false);
   const [draft, setDraft] = useState<ListingDraft | null>(null);
@@ -81,44 +85,44 @@ export function ProductForm({ initial = EMPTY, studio = false, canPublish = true
       {showPhoto && (
         <section className="space-y-4">
           <div className="grid aspect-[2/1] place-items-center overflow-hidden rounded-3xl border border-dashed border-line bg-surface2">
-            {preview ? <div className="h-full"><ProductArt src={preview} alt="Your product photo" className="h-full w-auto" /></div> : <p className="px-6 text-center text-muted">Take or upload a photo of your product</p>}
+            {preview ? <div className="h-full"><ProductArt src={preview} alt={t("seller.form.photoAlt")} className="h-full w-auto" /></div> : <p className="px-6 text-center text-muted">{t("seller.form.photoPrompt")}</p>}
           </div>
           <input ref={fileRef} type="file" accept="image/*" capture="environment" className="sr-only" id="photo" onChange={(e) => { const file = e.target.files?.[0]; if (file) { setStarted(Date.now()); analyse({ file, filename: file.name }); } }} />
           <div className="flex flex-wrap items-center gap-3">
-            <label htmlFor="photo" className={cn(btn(reviewed ? "outline" : "primary", "lg"), "cursor-pointer")}><Camera className="size-5" /> {preview ? "Use a different photo" : "Take or upload photo"}</label>
-            {draft?.retake && <button type="button" onClick={() => fileRef.current?.click()} className={btn("outline", "lg")}><RotateCcw className="size-4" /> Retake</button>}
-            {!preview && <span className="text-sm text-muted">or try a sample: {SAMPLES.map((s, i) => <span key={s.label}>{i > 0 && ", "}<button type="button" disabled={busy} onClick={() => { setStarted(Date.now()); analyse({ filename: s.file, sample: s }); }} className="underline hover:text-fg">{s.label}</button></span>)}</span>}
+            <label htmlFor="photo" className={cn(btn(reviewed ? "outline" : "primary", "lg"), "cursor-pointer")}><Camera className="size-5" /> {preview ? t("seller.form.differentPhoto") : t("seller.form.takePhoto")}</label>
+            {draft?.retake && <button type="button" onClick={() => fileRef.current?.click()} className={btn("outline", "lg")}><RotateCcw className="size-4" /> {t("seller.form.retake")}</button>}
+            {!preview && <span className="text-sm text-muted">{t("seller.form.trySample")} {SAMPLES.map((s, i) => <span key={s.label}>{i > 0 && ", "}<button type="button" disabled={busy} onClick={() => { setStarted(Date.now()); analyse({ filename: s.file, sample: s }); }} className="underline hover:text-fg">{t(s.key)}</button></span>)}</span>}
           </div>
-          {busy && <p className="flex items-center gap-2 text-sm text-muted" role="status"><Loader2 className="size-4 animate-spin" /> Writing your listing in English and Hindi…</p>}
-          {err && <p role="alert" className="text-sm text-bad">{err}</p>}
-          {draft?.retake && <p role="alert" className="rounded-lg bg-warn/10 px-3 py-2 text-sm text-warn">{draft.retakeReason ?? "The photo is unclear. Please retake."}</p>}
-          {reviewed && draft && <p className="text-sm text-muted">Draft ready{secs !== null ? ` in ${secs}s` : ""}. Check the details, set your price, then publish. Suggested range ₹{draft.priceHintMin}–₹{draft.priceHintMax} (you decide).</p>}
+          {busy && <p className="flex items-center gap-2 text-sm text-muted" role="status"><Loader2 className="size-4 animate-spin" /> {t("seller.form.writing")}</p>}
+          {err && <p role="alert" className="text-sm text-bad">{localizeMsg(err, lang)}</p>}
+          {draft?.retake && <p role="alert" className="rounded-lg bg-warn/10 px-3 py-2 text-sm text-warn">{draft.retakeReason ? localizeMsg(draft.retakeReason, lang) : t("seller.form.unclear")}</p>}
+          {reviewed && draft && <p className="text-sm text-muted">{secs !== null ? t("seller.form.draftReadyIn", { n: secs, min: draft.priceHintMin, max: draft.priceHintMax }) : t("seller.form.draftReady", { min: draft.priceHintMin, max: draft.priceHintMax })}</p>}
         </section>
       )}
 
       {(!studio || reviewed || f.title) && (
         <section className="space-y-6">
-          <div><label htmlFor="title" className={label}>Name</label><input id="title" name="title" required value={f.title} onChange={(e) => set("title", e.target.value)} className={inputCls} /></div>
+          <div><label htmlFor="title" className={label}>{t("seller.form.name")}</label><input id="title" name="title" required value={f.title} onChange={(e) => set("title", e.target.value)} className={inputCls} /></div>
           <div className="grid grid-cols-2 gap-4">
-            <div><label htmlFor="price" className={label}>Price (₹)</label><input id="price" name="price" type="number" min={1} step="1" required value={f.price} onChange={(e) => set("price", e.target.value)} className={inputCls} /></div>
-            <div><label htmlFor="stock" className={label}>In stock</label><input id="stock" name="stock" type="number" min={0} step="1" required value={f.stock} onChange={(e) => set("stock", e.target.value)} className={inputCls} /></div>
+            <div><label htmlFor="price" className={label}>{t("seller.form.price")}</label><input id="price" name="price" type="number" min={1} step="1" required value={f.price} onChange={(e) => set("price", e.target.value)} className={inputCls} /></div>
+            <div><label htmlFor="stock" className={label}>{t("seller.form.stock")}</label><input id="stock" name="stock" type="number" min={0} step="1" required value={f.stock} onChange={(e) => set("stock", e.target.value)} className={inputCls} /></div>
           </div>
           <details open={!studio} className="rounded-2xl border border-line p-4">
-            <summary className="cursor-pointer text-sm text-muted hover:text-fg">More details (description, Hindi, category)</summary>
+            <summary className="cursor-pointer text-sm text-muted hover:text-fg">{t("seller.form.more")}</summary>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <div><label htmlFor="titleHi" className={label}>नाम (हिंदी)</label><input id="titleHi" name="titleHi" lang="hi" value={f.titleHi} onChange={(e) => set("titleHi", e.target.value)} className={inputCls} /></div>
-              <div><label htmlFor="category" className={label}>Category</label><select id="category" name="category" value={f.category} onChange={(e) => set("category", e.target.value)} className={inputCls}>{CATEGORIES.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}</select></div>
-              <div><label htmlFor="description" className={label}>Description</label><textarea id="description" name="description" rows={4} value={f.description} onChange={(e) => set("description", e.target.value)} className={cn(inputCls, "h-auto py-2")} /></div>
+              <div><label htmlFor="category" className={label}>{t("seller.form.category")}</label><select id="category" name="category" value={f.category} onChange={(e) => set("category", e.target.value)} className={inputCls}>{CATEGORIES.map((c) => <option key={c.slug} value={c.slug}>{lang === "hi" ? c.nameHi : c.name}</option>)}</select></div>
+              <div><label htmlFor="description" className={label}>{t("seller.form.description")}</label><textarea id="description" name="description" rows={4} value={f.description} onChange={(e) => set("description", e.target.value)} className={cn(inputCls, "h-auto py-2")} /></div>
               <div><label htmlFor="descriptionHi" className={label}>विवरण (हिंदी)</label><textarea id="descriptionHi" name="descriptionHi" lang="hi" rows={4} value={f.descriptionHi} onChange={(e) => set("descriptionHi", e.target.value)} className={cn(inputCls, "h-auto py-2")} /></div>
-              <div><label htmlFor="mrp" className={label}>MRP (₹, optional)</label><input id="mrp" name="mrp" type="number" min={0} step="1" value={f.mrp} onChange={(e) => set("mrp", e.target.value)} className={inputCls} /></div>
-              <div><label htmlFor="tags" className={label}>Search words</label><input id="tags" name="tags" value={f.tags} onChange={(e) => set("tags", e.target.value)} className={inputCls} /></div>
-              <div className="md:col-span-2"><label htmlFor="attributes" className={label}>Details, one per line (Name: value)</label><textarea id="attributes" name="attributes" rows={3} value={f.attributes} onChange={(e) => set("attributes", e.target.value)} className={cn(inputCls, "h-auto py-2 font-mono")} /></div>
+              <div><label htmlFor="mrp" className={label}>{t("seller.form.mrp")}</label><input id="mrp" name="mrp" type="number" min={0} step="1" value={f.mrp} onChange={(e) => set("mrp", e.target.value)} className={inputCls} /></div>
+              <div><label htmlFor="tags" className={label}>{t("seller.form.tags")}</label><input id="tags" name="tags" value={f.tags} onChange={(e) => set("tags", e.target.value)} className={inputCls} /></div>
+              <div className="md:col-span-2"><label htmlFor="attributes" className={label}>{t("seller.form.attributes")}</label><textarea id="attributes" name="attributes" rows={3} value={f.attributes} onChange={(e) => set("attributes", e.target.value)} className={cn(inputCls, "h-auto py-2 font-mono")} /></div>
             </div>
           </details>
           <div className="flex flex-wrap items-center gap-4">
-            <button name="publish" value="1" disabled={!canPublish} className={btn("primary", "lg")}>Publish</button>
-            <button name="publish" value="0" className="text-sm text-muted underline hover:text-fg">Save as draft</button>
-            {!canPublish && <span className="text-sm text-warn">Publishing unlocks once your shop is approved.</span>}
+            <button name="publish" value="1" disabled={!canPublish} className={btn("primary", "lg")}>{t("seller.form.publish")}</button>
+            <button name="publish" value="0" className="text-sm text-muted underline hover:text-fg">{t("seller.form.saveDraft")}</button>
+            {!canPublish && <span className="text-sm text-warn">{t("seller.form.publishLocked")}</span>}
           </div>
         </section>
       )}
