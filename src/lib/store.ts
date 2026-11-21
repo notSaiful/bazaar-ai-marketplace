@@ -9,6 +9,7 @@ import { PRODUCT_SEED, SELLER_SEED } from "./catalog";
 import { lineCommission, type Paise } from "./money";
 import { hid, requestStore, decodeLog, type LogEntry } from "./state";
 import type {
+  Review,
   AuditEntry,
   CartLine,
   LedgerEntry,
@@ -665,14 +666,72 @@ function setProductStatus_(id: string, status: ProductStatus, note: string, acto
   return { ok: true };
 }
 
+/* ---------------- reviews (untrusted customer input) ---------------- */
+
+export interface ReviewInput { author: string; stars: number; text: string }
+const round1 = (n: number) => Math.round(n * 10) / 10;
+/** Strip control characters and collapse whitespace; reviews are shown as plain text only. */
+const cleanText = (v: unknown, max: number) => String(v ?? "").replace(/\p{Cc}/gu, " ").replace(/\s+/g, " ").trim().slice(0, max + 1);
+
+/** Reviews customers can see: held ones stay private until an admin publishes them. */
+export const publicReviews = (p: Product) => p.reviews.filter((r) => !r.held);
+
+/** True when this customer has a paid order containing the product (drives the "Verified purchase" badge). */
+export function hasBought(customerId: string, productId: string) {
+  const d = db();
+  const paid = new Set(d.groups.filter((g) => g.customerId === customerId && g.status === "paid").map((g) => g.id));
+  return d.orders.some((o) => paid.has(o.groupId) && o.status !== "cancelled" && o.items.some((it) => it.productId === productId));
+}
+
+function addReview_(productId: string, customerId: string, input: ReviewInput) {
+  const p = getProduct(productId);
+  if (!p || !isVisible(p)) return { error: "This product is not available for reviews." };
+  const stars = Number(input.stars);
+  if (!Number.isInteger(stars) || stars < 1 || stars > 5) return { error: "Choose a rating from 1 to 5 stars." };
+  const author = cleanText(input.author, 40);
+  const text = cleanText(input.text, 600);
+  if (author.length < 2 || author.length > 40) return { error: "Enter a name between 2 and 40 characters." };
+  if (text.length < 10) return { error: "Write at least 10 characters about the product." };
+  if (text.length > 600) return { error: "Keep the review under 600 characters." };
+  if (p.reviews.some((r) => r.customerId === customerId)) return { error: "You have already reviewed this product." };
+  const at = nowISO();
+  const held = looksLikeInjection(text) || looksLikeInjection(author);
+  const review: Review = {
+    id: `rev_${p.id}_${p.reviews.length}_${clock().toString(36)}`,
+    author, text, stars, at, customerId,
+    verified: hasBought(customerId, productId),
+    ...(held ? { held: true, heldReason: "Contains instructions aimed at AI agents (prompt-injection pattern)." } : {}),
+  };
+  p.reviews.unshift(review);
+  if (!held) applyRating(p, stars);
+  return { ok: true as const, review, held };
+}
+
+function applyRating(p: Product, stars: number) {
+  const n = p.ratingCount ?? publicReviews(p).length - 1;
+  p.rating = round1((p.rating * Math.max(0, n) + stars) / (Math.max(0, n) + 1));
+  p.ratingCount = Math.max(0, n) + 1;
+}
+
+/** Admin decision on a held review: publish it (counts toward the rating) or remove it. */
+function moderateReview_(productId: string, reviewId: string, decision: "publish" | "remove", actor: string) {
+  const p = getProduct(productId);
+  const r = p?.reviews.find((x) => x.id === reviewId);
+  if (!p || !r) return { error: "Review not found" };
+  if (decision === "remove") p.reviews = p.reviews.filter((x) => x !== r);
+  else if (r.held) { delete r.held; delete r.heldReason; applyRating(p, r.stars); }
+  logAudit(actor, `review_${decision}`, `${p.id}/${reviewId}`);
+  return { ok: true as const };
+}
+
 /* ---------------- anomalies (fraud / review queue) ---------------- */
 
 export function anomalies() {
   const d = db();
-  const out: { id: string; kind: string; target: string; productId?: string; sellerId?: string; reason: string }[] = [];
+  const out: { id: string; kind: string; target: string; productId?: string; reviewId?: string; held?: boolean; sellerId?: string; reason: string }[] = [];
   for (const p of d.products) {
     if (p.status === "flagged") out.push({ id: `f_${p.id}`, kind: "listing", target: p.title, productId: p.id, sellerId: p.sellerId, reason: p.flagReason ?? "Flagged for review" });
-    for (const r of p.reviews) if (INJECTION.test(r.text)) out.push({ id: `r_${p.id}`, kind: "review", target: p.title, productId: p.id, sellerId: p.sellerId, reason: `Review by ${r.author} contains instructions aimed at AI agents.` });
+    for (const [i, r] of p.reviews.entries()) if (r.held || INJECTION.test(r.text)) out.push({ id: `r_${r.id ?? `${p.id}_${i}`}`, kind: "review", target: p.title, productId: p.id, reviewId: r.id, sellerId: p.sellerId, held: !!r.held, reason: `Review by ${r.author} contains instructions aimed at AI agents.` });
   }
   const byCust = new Map<string, number>();
   for (const g of d.groups) if (g.status === "paid" && clock() - new Date(g.createdAt).getTime() < 2 * 864e5) byCust.set(g.customerId, (byCust.get(g.customerId) ?? 0) + 1);
@@ -768,6 +827,8 @@ export const registerSeller = logged("registerSeller", registerSeller_);
 export const saveProduct = logged("saveProduct", saveProduct_);
 export const setStock = logged("setStock", setStock_);
 export const archiveProduct = logged("archiveProduct", archiveProduct_);
+export const addReview = logged("addReview", addReview_);
+export const moderateReview = logged("moderateReview", moderateReview_);
 export const setSellerStatus = logged("setSellerStatus", setSellerStatus_);
 export const setCommission = logged("setCommission", setCommission_);
 export const setProductStatus = logged("setProductStatus", setProductStatus_);

@@ -51,10 +51,26 @@ export interface Product {
   emoji: string;
   image?: string; // optional uploaded data URL
   rating: number;
-  reviews: { author: string; text: string; stars: number }[];
+  /** How many ratings `rating` averages (seed data has more ratings than written reviews). */
+  ratingCount?: number;
+  reviews: Review[];
   createdAt: string;
   updatedAt: string;
   aiGenerated?: boolean;
+}
+
+/** Customer review. Text and author are untrusted input: rendered as text only, never fed to AI as instructions. */
+export interface Review {
+  id?: string;
+  author: string;
+  text: string;
+  stars: number;
+  at?: string;
+  verified?: boolean;
+  customerId?: string;
+  /** Held for admin moderation (e.g. prompt-injection pattern); not shown publicly or counted in the rating. */
+  held?: boolean;
+  heldReason?: string;
 }
 
 export interface OrderItem {

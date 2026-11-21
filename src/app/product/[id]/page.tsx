@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getProduct, getSeller, isVisible } from "@/lib/store";
-import { getSession } from "@/lib/session";
+import { getProduct, getSeller, isVisible, publicReviews } from "@/lib/store";
+import { accountName, getSession } from "@/lib/session";
+import { ReviewsSection } from "@/components/reviews";
+import { Stars } from "@/components/stars";
 import { formatINR } from "@/lib/money";
 import { artUrl } from "@/lib/utils";
 import { AddToCart } from "@/components/cart";
@@ -24,10 +26,20 @@ export default async function ProductPage({ params }: { params: P }) {
   if (!isVisible(p) && !owner) notFound();
   const seller = getSeller(p.sellerId)!;
   const credit = PHOTO_CREDITS[p.id];
-  const jsonLd = { "@context": "https://schema.org", "@type": "Product", name: p.title, description: p.description, offers: { "@type": "Offer", priceCurrency: "INR", price: p.price / 100, availability: p.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock" } };
+  const reviews = publicReviews(p);
+  const ratingCount = p.ratingCount ?? reviews.length;
+  const jsonLd = {
+    "@context": "https://schema.org", "@type": "Product", name: p.title, description: p.description,
+    offers: { "@type": "Offer", priceCurrency: "INR", price: p.price / 100, availability: p.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock" },
+    ...(ratingCount > 0 ? { aggregateRating: { "@type": "AggregateRating", ratingValue: p.rating, reviewCount: ratingCount } } : {}),
+    review: reviews.slice(0, 5).map((r) => ({ "@type": "Review", author: { "@type": "Person", name: r.author }, reviewRating: { "@type": "Rating", ratingValue: r.stars }, reviewBody: r.text, ...(r.at ? { datePublished: r.at.slice(0, 10) } : {}) })),
+  };
+  // Product and review text is untrusted: escape "<" so it can never close the script tag.
+  const ld = JSON.stringify(jsonLd).replace(/</g, "\\u003c");
   return (
+    <div className="space-y-16">
     <div className="grid gap-10 md:grid-cols-2">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ld }} />
       <figure>
         <div className="overflow-hidden rounded-xl bg-surface2"><ProductArt src={artUrl(p)} alt={p.title} eager sizes="(min-width: 1280px) 580px, (min-width: 768px) 45vw, 100vw" className="aspect-square" /></div>
         {credit && p.image === `/products/${p.id}.jpg` && (
@@ -42,16 +54,22 @@ export default async function ProductPage({ params }: { params: P }) {
           <Link href={`/store/${seller.id}`} className="text-sm text-muted hover:text-accent">{seller.name} · {seller.city}</Link>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">{p.title}</h1>
           <p className="text-muted" lang="hi">{p.titleHi}</p>
+          {ratingCount > 0 && (
+            <a href="#reviews" className="mt-2 inline-flex items-center gap-2 text-sm text-muted hover:text-fg">
+              <Stars value={p.rating} label={false} /> <span className="font-medium text-fg">{p.rating.toFixed(1)}</span> · {ratingCount} {ratingCount === 1 ? "rating" : "ratings"} · {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
+            </a>
+          )}
         </div>
         <div className="flex items-center gap-4"><span className="text-3xl font-semibold tabular-nums">{formatINR(p.price)}</span><StockBadge id={p.id} initial={p.stock} threshold={p.lowStockThreshold} /></div>
         <AddToCart id={p.id} stock={p.stock} className="h-12 w-full" />
         <p className="text-sm text-muted">Free delivery from {seller.city}. Pay once for items from different sellers.</p>
         <section className="space-y-2 border-t border-line pt-6"><p className="leading-relaxed">{p.description}</p><p className="text-sm leading-relaxed text-muted" lang="hi">{p.descriptionHi}</p></section>
-        <details className="border-t border-line pt-4 text-sm"><summary className="cursor-pointer text-muted hover:text-fg">Details & reviews</summary>
+        <details className="border-t border-line pt-4 text-sm"><summary className="cursor-pointer text-muted hover:text-fg">Product details</summary>
           <dl className="mt-3 grid grid-cols-2 gap-3">{Object.entries(p.attributes).map(([k, v]) => <div key={k}><dt className="text-xs text-muted">{k}</dt><dd>{v}</dd></div>)}</dl>
-          <ul className="mt-4 space-y-2">{p.reviews.map((r, i) => <li key={i} className="text-muted"><span className="text-warn">{"★".repeat(r.stars)}</span> {r.author}: {r.text}</li>)}</ul>
         </details>
       </div>
+    </div>
+    <ReviewsSection p={p} canReview={s.role === "customer" && isVisible(p)} mine={p.reviews.find((r) => r.customerId === s.customerId)} defaultName={s.role === "customer" ? accountName(s.role, s.sellerId) : ""} />
     </div>
   );
 }

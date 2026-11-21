@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { analytics, anomalies, db, reconciliation } from "@/lib/store";
+import { analytics, anomalies, db, getProduct, reconciliation } from "@/lib/store";
+import { moderateReviewAction } from "@/app/actions";
+import { btn } from "@/components/ui";
 import { formatINR, formatINRExact } from "@/lib/money";
 import { shortDate } from "@/lib/utils";
 import { ResetButton } from "@/components/reset-button";
@@ -16,17 +18,37 @@ export default async function Admin({ searchParams }: { searchParams: Promise<Re
   const rec = reconciliation();
   const pending = d.sellers.filter((s) => s.status === "pending");
   const flagged = anomalies().filter((f) => f.kind === "listing");
-  const attention = pending.length + flagged.length;
+  const heldReviews = anomalies().filter((f) => f.kind === "review" && f.held);
+  const attention = pending.length + flagged.length + heldReviews.length;
   const tile = "rounded-2xl border border-line p-6";
   return (
     <div className="space-y-12">
       <Flash sp={sp} />
       <section className="space-y-4" aria-labelledby="att">
         <h2 id="att" className="text-xl font-semibold">{attention ? `Needs your attention (${attention})` : "All clear"}</h2>
-        {attention === 0 && <p className="text-muted">No shops or listings are waiting for review.</p>}
+        {attention === 0 && <p className="text-muted">No shops, listings or reviews are waiting for review.</p>}
         <ul className="space-y-3">
           {pending.map((s) => <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line p-5"><div><div className="font-medium">{s.name}</div><div className="text-sm text-muted">New shop in {s.city} wants to start selling</div></div><SellerActions id={s.id} status={s.status} back="/admin" /></li>)}
           {flagged.map((f) => <li key={f.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line p-5"><div className="min-w-0"><div className="font-medium">{f.target}</div><div className="max-w-xl text-sm text-muted">Flagged: {f.reason}</div></div><ProductActions id={f.productId!} /></li>)}
+          {heldReviews.map((f) => {
+            const r = getProduct(f.productId!)?.reviews.find((x) => x.id === f.reviewId);
+            if (!r) return null;
+            return (
+              <li key={f.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line p-5">
+                <div className="min-w-0">
+                  <div className="font-medium">Review held on {f.target}</div>
+                  <div className="max-w-xl text-sm text-muted">{r.stars}★ by {r.author}: <q className="break-words">{r.text}</q></div>
+                  <div className="text-xs text-warn">{r.heldReason}</div>
+                </div>
+                <form action={moderateReviewAction} className="flex gap-2">
+                  <input type="hidden" name="productId" value={f.productId} />
+                  <input type="hidden" name="reviewId" value={f.reviewId} />
+                  <button name="decision" value="publish" className={btn("outline", "sm")}>Publish</button>
+                  <button name="decision" value="remove" className={btn("primary", "sm")}>Remove</button>
+                </form>
+              </li>
+            );
+          })}
         </ul>
       </section>
       <section className="grid gap-4 sm:grid-cols-3">

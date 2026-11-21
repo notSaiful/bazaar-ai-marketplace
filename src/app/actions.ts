@@ -146,3 +146,31 @@ export async function refundAction(f: FormData) { return withState(() => refundA
 export async function payoutAction(f: FormData) { return withState(() => payoutActionImpl(f)); }
 export async function replayWebhookAction() { return withState(() => replayWebhookActionImpl()); }
 export async function resetDemoAction() { return withState(() => resetDemoActionImpl()); }
+
+/* ---------- reviews (customer text is untrusted input) ---------- */
+export interface ReviewFormState { ok?: string; error?: string; nonce?: number }
+
+async function submitReviewActionImpl(_prev: ReviewFormState, f: FormData): Promise<ReviewFormState> {
+  const sess = await getSession();
+  if (sess.role !== "customer") return { error: "Switch to Shopping to write a review." };
+  if (!store.rateLimit(`review:${sess.customerId}`, 5)) return { error: "You're posting reviews very fast. Please wait a minute." };
+  const productId = s(f, "productId");
+  const r = store.addReview(productId, sess.customerId, { author: s(f, "author"), stars: Number(s(f, "stars")), text: s(f, "text") });
+  if ("error" in r) return { error: r.error };
+  revalidatePath(`/product/${productId}`);
+  return r.held
+    ? { ok: "Thanks! Your review is waiting for a quick check by our team before it appears.", nonce: Date.now() }
+    : { ok: "Thanks! Your review is live.", nonce: Date.now() };
+}
+
+async function moderateReviewActionImpl(f: FormData) {
+  await requireRole("admin");
+  const decision = s(f, "decision") === "publish" ? "publish" : "remove";
+  const r = store.moderateReview(s(f, "productId"), s(f, "reviewId"), decision, "admin");
+  revalidatePath("/", "layout");
+  if ("error" in r) back("/admin", "err", r.error!);
+  back("/admin", "msg", decision === "publish" ? "Review published." : "Review removed.");
+}
+
+export async function submitReviewAction(prev: ReviewFormState, f: FormData) { return withState(() => submitReviewActionImpl(prev, f)); }
+export async function moderateReviewAction(f: FormData) { return withState(() => moderateReviewActionImpl(f)); }

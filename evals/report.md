@@ -1,6 +1,6 @@
 # Eval & invariant report
 
-Generated 2026-11-21T12:56:32.224Z · 114 checks · **114 passed, 0 failed**
+Generated 2026-11-21T13:24:48.045Z · 123 checks · **123 passed, 0 failed**
 
 | Group | Passed | Total |
 |---|---|---|
@@ -17,6 +17,7 @@ Generated 2026-11-21T12:56:32.224Z · 114 checks · **114 passed, 0 failed**
 | listing | 3 | 3 |
 | persistence | 9 | 9 |
 | relevance | 3 | 3 |
+| reviews | 9 | 9 |
 
 All checks passed.
 
@@ -80,7 +81,7 @@ All checks passed.
 - ✅ [search] golden: “achaar”
 - ✅ [search] golden: “kurtaa”
 - ✅ [search] golden hit-rate ≥ 90% (18/18)
-- ✅ [search] p95 latency < 150 ms (NFR-03) (p95=4.75ms)
+- ✅ [search] p95 latency < 150 ms (NFR-03) (p95=2.30ms)
 - ✅ [search] price filter parsed from “under 500”
 - ✅ [search] flagged listing never appears in search
 - ✅ [agent] price/stock/budget accuracy: “diwali gift 2000 tak maa ke liye”
@@ -123,7 +124,7 @@ All checks passed.
 - ✅ [listing] tiny/blank photo prompts a retake
 - ✅ [listing] draft has Hindi + English copy and a price hint, but no final price field
 - ✅ [persistence] replaying the mutation log on a fresh seed reproduces the exact state (18 logged actions)
-- ✅ [persistence] log fits the signed cookie budget (958 bytes in 1 cookie(s))
+- ✅ [persistence] log fits the signed cookie budget (970 bytes in 1 cookie(s))
 - ✅ [persistence] cookie round-trip returns the same log
 - ✅ [persistence] tampered cookie is rejected (ignored, never trusted)
 - ✅ [persistence] seed order ids are deterministic across cold starts (grp_seed_NN)
@@ -133,5 +134,14 @@ All checks passed.
 - ✅ [relevance] “sasta kurta” returns only kurtas, cheapest first (sasta is a sort, not a keyword) (p_07,p_01)
 - ✅ [relevance] “diwali ke liye diya” returns diyas, not kurtas or sarees (p_09)
 - ✅ [relevance] multi-part request returns one item per part within budget (gift + festive + chai) (Soy Wax Scented Candles (3) | Brass Diya Set of 6 | Darjeeling First Flush Tea 250g)
+- ✅ [reviews] rejects out-of-range or fractional stars, too-short/too-long text, bad names, hidden or unknown products (err,err,err,err,err,err,err,err)
+- ✅ [reviews] valid review is saved with cleaned text (control chars and extra spaces removed)
+- ✅ [reviews] buyer with a paid order gets Verified purchase; a stranger does not
+- ✅ [reviews] rating is a weighted average over existing ratings and the count goes up by one (4.9x17 +1★ -> 4.7 (18))
+- ✅ [reviews] one review per customer per product
+- ✅ [reviews] prompt-injection review is held: not public, not counted, queued for admin
+- ✅ [reviews] admin can remove a held review
+- ✅ [reviews] reviews persist across instances (replayed from the cookie log)
+- ✅ [reviews] reviews never touch the ledger (books still balance)
 - ✅ [ledger] ledger reconciles to ₹0.00 after the whole suite (42 events)
 - ✅ [persistence] cart price API exposes no bank, GSTIN or commission fields (P1-4)
