@@ -1,9 +1,9 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
-import { Film, Upload } from "lucide-react";
+import { Film, Sparkles, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useT } from "./lang";
+import { useLang, useT } from "./lang";
 import { btn, inputCls } from "./ui";
 
 interface Limits { maxBytes: number; minSec: number; maxSec: number; maxCaption: number }
@@ -28,7 +28,9 @@ async function capturePoster(v: HTMLVideoElement): Promise<Blob | null> {
  */
 export function AdUploadForm({ products, limits }: { products: { id: string; title: string }[]; limits: Limits }) {
   const t = useT();
+  const lang = useLang();
   const router = useRouter();
+  const [writing, setWriting] = useState(false);
   const preview = useRef<HTMLVideoElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState<string | null>(null);
@@ -69,6 +71,18 @@ export function AdUploadForm({ products, limits }: { products: { id: string; tit
   async function onSeeked() {
     const v = preview.current;
     if (v && !poster) setPoster(await capturePoster(v));
+  }
+
+  async function writeWithAI() {
+    if (!productId || writing) return;
+    setWriting(true); setError(null);
+    try {
+      const res = await fetch("/api/ai/ad-caption", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ productId }) });
+      const body = (await res.json()) as { caption?: string; captionHi?: string; error?: string };
+      if (!res.ok) setError(body.error ?? t("seller.ads.err.network"));
+      else setCaption((lang === "hi" ? body.captionHi : body.caption) ?? "");
+    } catch { setError(t("seller.ads.err.network")); }
+    finally { setWriting(false); }
   }
 
   function submit(e: FormEvent) {
@@ -129,7 +143,12 @@ export function AdUploadForm({ products, limits }: { products: { id: string; tit
         <div>
           <div className="mb-1.5 flex items-baseline justify-between">
             <label htmlFor="ad-caption" className="text-sm font-medium">{t("seller.ads.caption")}</label>
-            <span className={cn("text-xs tabular-nums", caption.length > limits.maxCaption ? "text-bad" : "text-muted")}>{caption.length}/{limits.maxCaption}</span>
+            <span className="flex items-center gap-3">
+              <button type="button" onClick={writeWithAI} disabled={!productId || writing} className="inline-flex items-center gap-1 text-xs font-medium underline-offset-4 hover:underline disabled:opacity-50">
+                <Sparkles className="size-3.5" aria-hidden /> {writing ? t("seller.ads.aiWriting") : t("seller.ads.ai")}
+              </button>
+              <span className={cn("text-xs tabular-nums", caption.length > limits.maxCaption ? "text-bad" : "text-muted")}>{caption.length}/{limits.maxCaption}</span>
+            </span>
           </div>
           <textarea id="ad-caption" value={caption} onChange={(e) => setCaption(e.target.value)} required minLength={3} maxLength={limits.maxCaption} rows={3} placeholder={t("seller.ads.captionPh")} className={cn(inputCls, "h-auto resize-y py-2 leading-relaxed")} />
         </div>

@@ -7,6 +7,7 @@ import { formatINR } from "@/lib/money";
 import { artUrl } from "@/lib/utils";
 import { ProductArt } from "./ui";
 import { useLang, useT } from "./lang";
+import { VoiceSearch } from "./voice-search";
 
 interface R { ms: number; total: number; parsed: { intents: string[]; maxPrice?: number }; results: { id: string; title: string; titleHi?: string; price: number; emoji: string; hue: number; image?: string; why: string[] }[] }
 
@@ -38,6 +39,7 @@ export function SearchBox({ placeholder, initial = "", big = false }: { placehol
         <div className={`flex items-center gap-2 rounded-lg border border-line bg-surface px-3 transition focus-within:border-fg/40 focus-within:ring-4 focus-within:ring-fg/5 ${big ? "h-12" : "h-9"}`}>
           <Search className="size-4 shrink-0 text-muted" />
           <input id={big ? "hero-search" : "nav-search"} value={q} onChange={(e) => { setQ(e.target.value); setOpen(true); }} onFocus={() => setOpen(true)} placeholder={placeholder} autoComplete="off" className="w-full bg-transparent text-sm outline-none placeholder:text-muted sm:text-base" />
+          <VoiceSearch onText={(text) => { setQ(text); setOpen(true); }} onFinal={(text) => { setOpen(false); router.push(`/search?q=${encodeURIComponent(text)}`); }} />
           <button type="button" onClick={() => { setOpen(false); window.dispatchEvent(new CustomEvent("open-assistant", { detail: q.trim() })); }} aria-label={tr("shop.searchbox.ask")} title={tr("shop.searchbox.ask")} className="-mr-1.5 grid size-8 shrink-0 place-items-center rounded-md text-fg transition hover:bg-surface2">
             <Sparkles className="size-4" />
           </button>

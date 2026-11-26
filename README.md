@@ -45,9 +45,17 @@ Use the **view switcher** in the header: Shopping · Selling (pick which seller 
 ## Environment variables (all optional, see `.env.example`)
 | Variable | Effect |
 |---|---|
-| `ANTHROPIC_API_KEY`, `AI_MODEL` | Photo-to-listing calls a vision model; output is Zod-validated; any failure falls back to the mock |
+| `ANTHROPIC_API_KEY`, `AI_MODEL`, `AI_MODE` | Turns on Claude (default `claude-opus-5-5`) for the shopping assistant, photo-to-listing and Samples ad captions. See *AI with Claude* below. `AI_MODE=mock` forces it off |
 | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | Creates real test-mode Razorpay orders and verifies signatures. Without keys the mock checkout is used (it still sends a *signed* webhook through the real handler) |
 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | Enables the prepared Supabase clients. Apply `supabase/migrations/*.sql` to a project |
+
+## AI with Claude
+All model calls go through `src/lib/claude.ts`: the official Anthropic SDK, structured outputs validated with Zod, server-side refusal fallbacks, a timeout, and a fallback to the deterministic feature on any error, refusal, timeout or malformed reply. AI is off unless `ANTHROPIC_API_KEY` is set, so evals and the demo stay reproducible.
+- **Shopping assistant** (`src/lib/assistant-ai.ts`): the safety checks run first (prompt injection, price manipulation, greetings, cart, off-topic never reach the model). Claude reads the request in English, Hindi or Hinglish and proposes product ids from the live catalogue. The server keeps only real, live, in-stock products, trims the picks to the shopper's budget, and writes every price from the database; model wording that mentions a price, discount or link is replaced.
+- **Photo-to-listing** (`src/lib/ai.ts`): Claude vision drafts English + Hindi copy, category, attributes, tags and a price *hint*. The seller always sets the price.
+- **Samples ad captions** (`src/lib/ad-caption.ts`, *Write with AI* on `/seller/ads`): English + Hindi captions from the product photo, screened like any typed caption.
+- **Voice search**: the mic in the search bar uses the browser's speech recognition (Hindi UI listens in `hi-IN`, English UI in `en-IN`); no audio reaches our server.
+- Evals cover every AI path with a fake model (`setFakeClaude`), including invalid picks, over-budget picks, prices in model text, errors and refusals.
 
 ## 5-minute demo script
 1. **Seller, photo → listing** (switch to Selling → *Add a product from a photo*): click the **Brass diya** sample (or upload any photo). English + Hindi draft, category, attributes and a *price hint* appear; the seller sets the price and confirms. Publish, and it is live on the storefront. Try the *Naya Karigar Studio* flow: *Register a new shop* (top right of the seller area) → it stays pending, publishing is locked.

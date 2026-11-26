@@ -35,12 +35,17 @@ const SHOP_WORDS = /(cart|checkout|order|track|price|cost|gift|budget|buy|add|re
 const OFFTOPIC = /(weather|mausam|president|prime minister|capital of|joke|poem|kavita|python|javascript|code|recipe for|stock market|bitcoin|crypto|homework|essay|translate|who is|kaun hai|news|cricket score|medical|diagnos|loan)/i;
 const MANIPULATE = /(ignore (all |your |the )?(previous|prior|above)|system prompt|reveal .*prompt|you are now|developer mode|jailbreak|100% discount|set (the )?price|free of cost|apply .*coupon|change .*price|dan mode)/i;
 
-const card = (p: Product, sellerName: string, why: string[] = []): AssistantCard => ({
+export const card = (p: Product, sellerName: string, why: string[] = []): AssistantCard => ({
   id: p.id, title: p.title, price: p.price, sellerName, stock: p.stock, category: p.category, emoji: p.emoji, hue: p.hue, image: p.image, why,
 });
 
 
-export function assistantRespond(message: string, cart: CartLine[] = []): AssistantReply {
+/**
+ * Everything that must be answered WITHOUT searching or calling a model: empty input, manipulation /
+ * prompt-injection attempts, greetings, cart and checkout questions, off-topic requests.
+ * Returns a final reply, or null when the message is a shopping request.
+ */
+export function preflight(message: string, cart: CartLine[] = []): AssistantReply | null {
   const trace: AssistantReply["trace"] = [];
   const msg = message.trim().slice(0, 500);
   const base: AssistantReply = { reply: "", cards: [], suggestedCart: [], trace };
@@ -65,10 +70,19 @@ export function assistantRespond(message: string, cart: CartLine[] = []): Assist
     return { ...base, reply: `Your total is ${formatINR(pc.total)} across ${pc.groups.length} seller(s). Open the cart and tap Checkout to pay once for everything.` };
   }
 
-  const parsed = parseQuery(msg);
-  const looksShopping = SHOP_WORDS.test(msg) || parsed.tokens.length > 0;
   if (OFFTOPIC.test(msg) && !/(shop|buy|cart|gift)/i.test(msg))
     return { ...base, declined: true, reply: "I'm a shopping assistant, so I can only help with finding and buying products from our sellers. What would you like to shop for?" };
+  return null;
+}
+
+export function assistantRespond(message: string, cart: CartLine[] = []): AssistantReply {
+  const early = preflight(message, cart);
+  if (early) return early;
+  const trace: AssistantReply["trace"] = [];
+  const msg = message.trim().slice(0, 500);
+  const base: AssistantReply = { reply: "", cards: [], suggestedCart: [], trace };
+  const parsed = parseQuery(msg);
+  const looksShopping = SHOP_WORDS.test(msg) || parsed.tokens.length > 0;
 
   // multi-topic: split "diya aur mithai", "kurta and jhumka"
   const budget = parsed.maxPrice;

@@ -15,6 +15,7 @@
     "photos": "node scripts/photo-variants.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.14.0",
     "@supabase/supabase-js": "^2.119.2",
     "clsx": "^2.1.1",
     "lucide-react": "^1.77.0",

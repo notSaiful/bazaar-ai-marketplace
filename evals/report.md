@@ -1,6 +1,6 @@
 # Eval & invariant report
 
-Generated 2026-11-21T15:01:37.644Z · 143 checks · **143 passed, 0 failed**
+Generated 2026-11-26T03:47:14.587Z · 156 checks · **156 passed, 0 failed**
 
 | Group | Passed | Total |
 |---|---|---|
@@ -20,6 +20,7 @@ Generated 2026-11-21T15:01:37.644Z · 143 checks · **143 passed, 0 failed**
 | reviews | 9 | 9 |
 | i18n | 7 | 7 |
 | samples | 13 | 13 |
+| claude | 13 | 13 |
 
 All checks passed.
 
@@ -83,7 +84,7 @@ All checks passed.
 - ✅ [search] golden: “achaar”
 - ✅ [search] golden: “kurtaa”
 - ✅ [search] golden hit-rate ≥ 90% (18/18)
-- ✅ [search] p95 latency < 150 ms (NFR-03) (p95=2.54ms)
+- ✅ [search] p95 latency < 150 ms (NFR-03) (p95=2.66ms)
 - ✅ [search] price filter parsed from “under 500”
 - ✅ [search] flagged listing never appears in search
 - ✅ [agent] price/stock/budget accuracy: “diwali gift 2000 tak maa ke liye”
@@ -145,11 +146,11 @@ All checks passed.
 - ✅ [reviews] admin can remove a held review
 - ✅ [reviews] reviews persist across instances (replayed from the cookie log)
 - ✅ [reviews] reviews never touch the ledger (books still balance)
-- ✅ [i18n] every phrase has English and Hindi text (485 phrases)
+- ✅ [i18n] every phrase has English and Hindi text (492 phrases)
 - ✅ [i18n] every Hindi translation is written in Devanagari
 - ✅ [i18n] placeholders like {n} match between English and Hindi
 - ✅ [i18n] client components only use keys that exist in the dictionary
-- ✅ [i18n] generated client key list is up to date (212 keys; run npx tsx scripts/client-keys.ts)
+- ✅ [i18n] generated client key list is up to date (219 keys; run npx tsx scripts/client-keys.ts)
 - ✅ [i18n] shoppers get only client phrases in the active language, no seller phrases
 - ✅ [i18n] t() fills placeholders and falls back to English, then to the key
 - ✅ [samples] reads the real duration from an MP4 header (15.0 s) ({"ok":true,"mime":"video/mp4","durationSec":15})
@@ -164,6 +165,19 @@ All checks passed.
 - ✅ [samples] suspending a seller removes their ads from the feed
 - ✅ [samples] ads and moderation decisions persist across instances (replayed from the cookie log)
 - ✅ [samples] ads never touch the ledger (books still balance)
+- ✅ [claude] AI is off without ANTHROPIC_API_KEY (evals and demo stay deterministic)
+- ✅ [claude] drops unknown, hidden (flagged), out-of-stock and duplicate picks (p_09,p_18)
+- ✅ [claude] every price shown comes from the database, never the model
+- ✅ [claude] picks are trimmed to the shopper's budget on the server (total 34900)
+- ✅ [claude] model wording with a price or discount is replaced; DB price still shown
+- ✅ [claude] manipulation and off-topic intents are declined with no products
 - ✅ [ledger] ledger reconciles to ₹0.00 after the whole suite (42 events)
+- ✅ [claude] without a key the assistant is exactly the rules-based one
+- ✅ [claude] injection attempts and greetings never reach the model
+- ✅ [claude] model picks become cards with DB prices and a cart suggestion
 - ✅ [persistence] cart price API exposes no bank, GSTIN or commission fields (P1-4)
+- ✅ [claude] errors, refusals and malformed output fall back to the rules-based assistant (fell back to rules (error) | fell back to rules (refusal) | fell back to rules (invalid))
 - ✅ [samples] media route serves video with Range support (200, 206, suffix range, 416) and 404s unknown keys (200,206,206,416,404,404)
+- ✅ [claude] listing: Claude output is normalised and schema-checked (price range ordered, confidence clamped, no price set)
+- ✅ [claude] listing: invalid model output falls back to the demo draft
+- ✅ [claude] ad captions: hashtags stripped; links or injection fall back to a template

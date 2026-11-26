@@ -30,6 +30,8 @@ export const samples: Dict = {
   "seller.ads.pickProduct": { en: "Choose a product", hi: "उत्पाद चुनें" },
   "seller.ads.caption": { en: "Caption", hi: "कैप्शन" },
   "seller.ads.captionPh": { en: "What makes it special? e.g. hand-polished brass from Moradabad", hi: "इसमें ख़ास क्या है? जैसे: मुरादाबाद का हाथ से चमकाया पीतल" },
+  "seller.ads.ai": { en: "Write with AI", hi: "AI से लिखें" },
+  "seller.ads.aiWriting": { en: "Writing…", hi: "लिख रहा है…" },
   "seller.ads.submit": { en: "Post ad", hi: "विज्ञापन पोस्ट करें" },
   "seller.ads.uploading": { en: "Uploading…", hi: "अपलोड हो रहा है…" },
   "seller.ads.live": { en: "Your ad is live in Samples.", hi: "आपका विज्ञापन सैंपल में लाइव है।" },

@@ -2,6 +2,11 @@ import type { Dict } from "../i18n-core";
 
 /** Customer storefront: home, search, product page, reviews, wishlist, store pages, assistant. */
 export const shop: Dict = {
+  "shop.voice.start": { en: "Search by voice", hi: "बोलकर खोजें" },
+  "shop.voice.stop": { en: "Stop listening", hi: "सुनना बंद करें" },
+  "shop.voice.listening": { en: "Listening… speak now", hi: "सुन रहा है… अब बोलें" },
+  "shop.voice.denied": { en: "Microphone access is blocked. Allow it in your browser settings.", hi: "माइक्रोफ़ोन की अनुमति नहीं है। ब्राउज़र की सेटिंग में अनुमति दें।" },
+  "shop.voice.error": { en: "Didn't catch that. Try again.", hi: "समझ नहीं आया। फिर से बोलें।" },
   // Shared bits
   "shop.all": { en: "All", hi: "सभी" },
   "shop.unknown": { en: "Unknown", hi: "अज्ञात" },
