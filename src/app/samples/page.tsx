@@ -27,7 +27,7 @@ export default async function SamplesPage() {
         poster: a.poster ?? artUrl(p),
         caption: hi && a.captionHi ? a.captionHi : a.caption,
         durationSec: a.durationSec,
-        product: { id: p.id, title: hi ? p.titleHi : p.title, price: formatINR(p.price), image: artUrl(p) },
+        product: { id: p.id, title: hi ? p.titleHi : p.title, price: formatINR(p.price), image: artUrl(p), stock: p.stock },
         shop: { id: shop.id, name: shop.name, emoji: shop.emoji, hue: shop.hue },
       };
     });

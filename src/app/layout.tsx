@@ -14,6 +14,7 @@ import { sideNavData } from "@/lib/nav";
 import { getWishlistIds } from "@/lib/wishlist";
 import { WishlistProvider } from "@/components/wishlist";
 import { BottomNav } from "@/components/bottom-nav";
+import { GuidedTour, TourStartButton } from "@/components/guided-tour";
 import { Suspense } from "react";
 import { LangProvider } from "@/components/lang";
 import { clientMessages, t } from "@/lib/i18n";
@@ -61,6 +62,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     <p className="text-xs font-medium text-muted">{t("nav.resources", s.lang)}</p>
                     <a className="hover:text-muted" href="/credits">{t("nav.photoCredits", s.lang)}</a>
                     <a className="hover:text-muted" href="/.well-known/ucp">{t("nav.forAgents", s.lang)}</a>
+                    {shop && <TourStartButton />}
                     <span className="text-muted"><LangToggle lang={s.lang} /></span>
                   </nav>
                   <LiveClock />
@@ -70,6 +72,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </div>
           {shop && <AssistantBoundary><AssistantLazy aiLive={aiEnabled()} /></AssistantBoundary>}
           {shop && <BottomNav />}
+          {shop && <GuidedTour />}
           <CartDrawer />
           <RevealObserver />
           </WishlistProvider>

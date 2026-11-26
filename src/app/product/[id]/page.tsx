@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ShareButton } from "@/components/share-button";
 import { notFound } from "next/navigation";
 import { getProduct, getSeller, isVisible, publicReviews } from "@/lib/store";
 import { accountName, getSession } from "@/lib/session";
@@ -67,7 +68,10 @@ export default async function ProductPage({ params }: { params: P }) {
           )}
         </div>
         <div className="flex items-center gap-4"><span className="text-3xl font-semibold tabular-nums">{formatINR(p.price)}</span><StockBadge id={p.id} initial={p.stock} threshold={p.lowStockThreshold} /></div>
-        <AddToCart id={p.id} stock={p.stock} className="h-12 w-full" />
+        <div className="flex gap-2">
+          <AddToCart id={p.id} stock={p.stock} className="h-12 flex-1" />
+          <ShareButton path={`/product/${p.id}`} title={hi ? p.titleHi : p.title} />
+        </div>
         <p className="text-sm text-muted">{t("shop.product.delivery", L, { city: seller.city })}</p>
         <section className="space-y-2 border-t border-line pt-6"><p className="leading-relaxed" lang={hi ? "hi" : undefined}>{hi ? p.descriptionHi : p.description}</p><p className="text-sm leading-relaxed text-muted" lang={hi ? "en" : "hi"}>{hi ? p.description : p.descriptionHi}</p></section>
         <details className="border-t border-line pt-4 text-sm"><summary className="cursor-pointer text-muted hover:text-fg">{t("shop.product.details", L)}</summary>

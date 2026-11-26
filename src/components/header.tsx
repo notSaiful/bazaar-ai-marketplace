@@ -38,7 +38,7 @@ export async function Header() {
             <AccountMenu name={accountName(s.role, s.sellerId)} role={s.role} ordersLabel={t("nav.myOrders", s.lang)} />
           </div>
           {shop && (
-            <Link href="/samples" className="hidden h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 text-sm font-medium transition hover:bg-surface2 md:flex">
+            <Link href="/samples" data-tour="samples" className="hidden h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 text-sm font-medium transition hover:bg-surface2 md:flex">
               <Clapperboard className="size-4" aria-hidden />{t("samples.tab", s.lang)}
             </Link>
           )}

@@ -10,6 +10,7 @@ import { checkout } from "./dict/checkout";
 import { seller } from "./dict/seller";
 import { ui } from "./dict/ui";
 import { samples } from "./dict/samples";
+import { engage } from "./dict/engage";
 import { fill, type Dict, type Lang } from "./i18n-core";
 import { CLIENT_KEYS } from "./dict/client-keys";
 
@@ -38,7 +39,7 @@ const legacy: Dict = {
   delivery: { en: "Delivery by", hi: "डिलीवरी" },
 };
 
-export const DICT: Dict = { ...legacy, ...common, ...ui, ...shop, ...checkout, ...seller, ...samples };
+export const DICT: Dict = { ...legacy, ...common, ...ui, ...shop, ...checkout, ...seller, ...samples, ...engage };
 
 export function t(key: string, lang: Lang, vars?: Record<string, string | number>) {
   return fill(DICT[key]?.[lang] ?? DICT[key]?.en ?? key, vars);

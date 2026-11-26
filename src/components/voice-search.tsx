@@ -67,6 +67,7 @@ export function VoiceSearch({ onText, onFinal, className }: { onText: (t: string
       <button
         type="button"
         onClick={toggle}
+        data-tour="voice"
         aria-pressed={listening}
         aria-label={listening ? t("shop.voice.stop") : t("shop.voice.start")}
         title={listening ? t("shop.voice.stop") : t("shop.voice.start")}

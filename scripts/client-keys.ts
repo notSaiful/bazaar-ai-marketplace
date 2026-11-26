@@ -31,13 +31,14 @@ export function collectClientKeys() {
     if (!/^\s*["']use client["']/.test(src)) continue;
     for (const m of src.matchAll(/["']([a-z_]+(?:\.[a-zA-Z0-9_]+)+)["']/g)) {
       if (DICT[m[1]]) keys.add(m[1]);
-      else if (/\bt\(\s*["']/.test(src.slice(Math.max(0, m.index! - 6), m.index! + 1))) unknown.push(`${file.replace(ROOT, "src")}: ${m[1]}`);
+      else if (/\btr?\(\s*["']/.test(src.slice(Math.max(0, m.index! - 7), m.index! + 1))) unknown.push(`${file.replace(ROOT, "src")}: ${m[1]}`);
     }
     for (const m of src.matchAll(/`([a-z_]+(?:\.[a-zA-Z0-9_]+)*\.)\$\{/g)) prefixes.add(m[1]);
-    // Keys that are plain legacy names (no dot) used via t("name")
-    for (const m of src.matchAll(/\bt\(\s*["']([a-z_]+)["']/g)) if (DICT[m[1]]) keys.add(m[1]);
   }
   for (const p of prefixes) for (const k of Object.keys(DICT)) if (k.startsWith(p)) keys.add(k);
+  // Legacy keys have no dot (e.g. "in_stock") and are easy to miss when called through a renamed helper
+  // such as tr("in_stock"); there are only a few, so always send them.
+  for (const k of Object.keys(DICT)) if (!k.includes(".")) keys.add(k);
   return { keys: [...keys].sort(), prefixes: [...prefixes].sort(), unknown };
 }
 

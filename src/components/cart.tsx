@@ -13,7 +13,8 @@ const ETA_HI = new Intl.DateTimeFormat("hi-IN-u-nu-latn", { weekday: "short", da
 interface Ctx {
   lines: CartLine[];
   count: number;
-  add: (id: string, qty?: number) => void;
+  /** Pass { open: false } to add without opening the cart drawer (e.g. from the Samples feed). */
+  add: (id: string, qty?: number, opts?: { open?: boolean }) => void;
   setQty: (id: string, qty: number) => void;
   remove: (id: string) => void;
   clear: () => void;
@@ -38,14 +39,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
   const save = useCallback((next: CartLine[]) => { setLines(next); localStorage.setItem("bazaar_cart", JSON.stringify(next)); }, []);
-  const add = useCallback((id: string, qty = 1) => {
+  const add = useCallback((id: string, qty = 1, opts?: { open?: boolean }) => {
     setLines((cur) => {
       const ex = cur.find((l) => l.productId === id);
       const next = ex ? cur.map((l) => (l.productId === id ? { ...l, qty: l.qty + qty } : l)) : [...cur, { productId: id, qty }];
       localStorage.setItem("bazaar_cart", JSON.stringify(next));
       return next;
     });
-    setOpen(true);
+    if (opts?.open !== false) setOpen(true);
   }, []);
   const setQty = useCallback((id: string, qty: number) => save(lines.map((l) => (l.productId === id ? { ...l, qty: Math.max(1, qty) } : l))), [lines, save]);
   const remove = useCallback((id: string) => save(lines.filter((l) => l.productId !== id)), [lines, save]);

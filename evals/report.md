@@ -1,6 +1,6 @@
 # Eval & invariant report
 
-Generated 2026-11-26T04:12:42.713Z · 156 checks · **156 passed, 0 failed**
+Generated 2026-11-26T04:56:18.512Z · 156 checks · **156 passed, 0 failed**
 
 | Group | Passed | Total |
 |---|---|---|
@@ -84,7 +84,7 @@ All checks passed.
 - ✅ [search] golden: “achaar”
 - ✅ [search] golden: “kurtaa”
 - ✅ [search] golden hit-rate ≥ 90% (18/18)
-- ✅ [search] p95 latency < 150 ms (NFR-03) (p95=3.98ms)
+- ✅ [search] p95 latency < 150 ms (NFR-03) (p95=2.92ms)
 - ✅ [search] price filter parsed from “under 500”
 - ✅ [search] flagged listing never appears in search
 - ✅ [agent] price/stock/budget accuracy: “diwali gift 2000 tak maa ke liye”
@@ -127,7 +127,7 @@ All checks passed.
 - ✅ [listing] tiny/blank photo prompts a retake
 - ✅ [listing] draft has Hindi + English copy and a price hint, but no final price field
 - ✅ [persistence] replaying the mutation log on a fresh seed reproduces the exact state (18 logged actions)
-- ✅ [persistence] log fits the signed cookie budget (963 bytes in 1 cookie(s))
+- ✅ [persistence] log fits the signed cookie budget (969 bytes in 1 cookie(s))
 - ✅ [persistence] cookie round-trip returns the same log
 - ✅ [persistence] tampered cookie is rejected (ignored, never trusted)
 - ✅ [persistence] seed order ids are deterministic across cold starts (grp_seed_NN)
@@ -146,11 +146,11 @@ All checks passed.
 - ✅ [reviews] admin can remove a held review
 - ✅ [reviews] reviews persist across instances (replayed from the cookie log)
 - ✅ [reviews] reviews never touch the ledger (books still balance)
-- ✅ [i18n] every phrase has English and Hindi text (494 phrases)
+- ✅ [i18n] every phrase has English and Hindi text (518 phrases)
 - ✅ [i18n] every Hindi translation is written in Devanagari
 - ✅ [i18n] placeholders like {n} match between English and Hindi
 - ✅ [i18n] client components only use keys that exist in the dictionary
-- ✅ [i18n] generated client key list is up to date (221 keys; run npx tsx scripts/client-keys.ts)
+- ✅ [i18n] generated client key list is up to date (263 keys; run npx tsx scripts/client-keys.ts)
 - ✅ [i18n] shoppers get only client phrases in the active language, no seller phrases
 - ✅ [i18n] t() fills placeholders and falls back to English, then to the key
 - ✅ [samples] reads the real duration from an MP4 header (15.0 s) ({"ok":true,"mime":"video/mp4","durationSec":15})

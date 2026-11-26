@@ -241,6 +241,72 @@ ok("mobile: Add button is >=44px tall", box.height >= 43.5, `h=${box?.height}`);
   await uc.close();
 }
 
+/* 6d. Share, add to cart from Samples, guided tour */
+{
+  const ec = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  await ec.grantPermissions(["clipboard-read", "clipboard-write"], { origin: A });
+  // Force the fallback menu (desktop browsers differ on navigator.share).
+  await ec.addInitScript(() => { Object.defineProperty(navigator, "share", { value: undefined, configurable: true }); });
+  const ep = await ec.newPage();
+  ep.on("pageerror", (e) => errors.push("engage pageerror: " + e.message));
+  await ep.goto(A + "/product/p_09");
+  await ep.getByRole("button", { name: "Share" }).first().click();
+  const wa = await ep.getByRole("menuitem", { name: "Share on WhatsApp" }).getAttribute("href");
+  ok("share: WhatsApp link carries the product URL", !!wa && wa.startsWith("https://wa.me/?text=") && decodeURIComponent(wa).includes("/product/p_09") && decodeURIComponent(wa).includes("Brass Diya"), (wa ?? "").slice(0, 60));
+  await ep.getByRole("menuitem", { name: "Copy link" }).click();
+  const clip = await ep.evaluate(() => navigator.clipboard.readText()).catch(() => "");
+  ok("share: Copy link puts the product URL on the clipboard", clip.endsWith("/product/p_09"), clip);
+
+  await ep.goto(A + "/samples");
+  await ep.locator("[data-i='0']").getByRole("button", { name: /^Add to cart/ }).click();
+  await ep.getByRole("status").filter({ hasText: "Added to cart" }).waitFor({ timeout: 5000 }).catch(() => {});
+  ok("samples: add to cart shows a toast and keeps the video (no drawer)", await ep.getByRole("status").filter({ hasText: "Added to cart" }).isVisible() && !(await ep.getByRole("dialog", { name: "Shopping cart" }).isVisible()));
+  ok("samples: cart count updates", await ep.getByRole("button", { name: /Open cart, 1 items/ }).first().isVisible());
+  await ep.getByRole("button", { name: "View cart" }).click();
+  ok("samples: View cart opens the drawer with the product", await ep.getByRole("dialog", { name: "Shopping cart" }).getByText(/Brass Diya/).first().waitFor({ timeout: 8000 }).then(() => true).catch(() => false));
+
+  await ep.goto(A + "/?tour=1");
+  const tour = ep.getByRole("dialog", { name: "Shop in Hindi" });
+  await tour.waitFor({ timeout: 8000 }).catch(() => {});
+  ok("tour: ?tour=1 starts at the Hindi toggle", await tour.isVisible());
+  const seen = [];
+  for (let k = 0; k < 6; k++) {
+    const title = await ep.locator("#tour-title").textContent().catch(() => null);
+    if (!title) break;
+    seen.push(title);
+    const btn = ep.getByRole("button", { name: /^(Next|Got it)$/ });
+    if (!(await btn.isVisible().catch(() => false))) break;
+    await btn.click();
+    await ep.waitForTimeout(250);
+  }
+  ok("tour: walks through the steps and closes on Got it", seen[0] === "Shop in Hindi" && seen.includes("Ask the AI assistant") && seen.includes("Watch Samples") && !(await ep.locator("#tour-title").isVisible().catch(() => false)), seen.join(" > "));
+  ok("tour: remembered as done", (await ep.evaluate(() => localStorage.getItem("bz_tour_done"))) === "1");
+  await ep.goto(A + "/");
+  await ep.getByRole("button", { name: "Take the tour" }).click();
+  ok("tour: footer link replays it", await ep.getByRole("dialog", { name: "Shop in Hindi" }).isVisible().catch(() => false));
+  await ec.close();
+}
+
+/* 6e. No raw translation keys on screen (English and Hindi) */
+{
+  const kc = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const kp = await kc.newPage();
+  const RAW = /\b(in_stock|low_stock|out_of_stock|search_ph|add_to_cart)\b|\b(shop|checkout|samples|nav|seller|tour|share|ai|role|status|action|error|loading|brand|lang|theme|account|msg)\.[a-zA-Z_]{2,}/;
+  const hits = [];
+  for (const lang of ["en", "hi"]) {
+    await kc.request.post(A + `/api/role?role=customer&lang=${lang}`);
+    for (const path of ["/", "/search", "/product/p_09", "/product/p_23", "/samples", "/wishlist", "/account", "/orders", "/credits"]) {
+      await kp.goto(A + path);
+      const txt = await kp.locator("body").innerText();
+      const m = RAW.exec(txt.replace(/https?:\/\/\S+/g, ""));
+      if (m) hits.push(`${lang}${path}: ${m[0]}`);
+    }
+  }
+  await kc.request.post(A + "/api/role?lang=en");
+  ok("no raw translation keys visible on customer pages (en + hi)", hits.length === 0, hits.slice(0, 4).join(" | "));
+  await kc.close();
+}
+
 /* 7. headers, robots */
 const h = await ctx.request.get(A + "/");
 const hd = h.headers();

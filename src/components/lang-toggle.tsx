@@ -16,6 +16,7 @@ export function LangToggle({ lang, compact = false }: { lang: string; compact?: 
   return (
     <button
       onClick={flip}
+      data-tour="lang"
       aria-busy={pending}
       aria-label={t("lang.switchLabel")}
       title={t("lang.switchLabel")}

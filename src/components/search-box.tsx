@@ -40,7 +40,7 @@ export function SearchBox({ placeholder, initial = "", big = false }: { placehol
           <Search className="size-4 shrink-0 text-muted" />
           <input id={big ? "hero-search" : "nav-search"} value={q} onChange={(e) => { setQ(e.target.value); setOpen(true); }} onFocus={() => setOpen(true)} placeholder={placeholder} autoComplete="off" className="w-full bg-transparent text-sm outline-none placeholder:text-muted sm:text-base" />
           <VoiceSearch onText={(text) => { setQ(text); setOpen(true); }} onFinal={(text) => { setOpen(false); router.push(`/search?q=${encodeURIComponent(text)}`); }} />
-          <button type="button" onClick={() => { setOpen(false); window.dispatchEvent(new CustomEvent("open-assistant", { detail: q.trim() })); }} aria-label={tr("shop.searchbox.ask")} title={tr("shop.searchbox.ask")} className="-mr-1.5 grid size-8 shrink-0 place-items-center rounded-md text-fg transition hover:bg-surface2">
+          <button type="button" onClick={() => { setOpen(false); window.dispatchEvent(new CustomEvent("open-assistant", { detail: q.trim() })); }} data-tour="assistant" aria-label={tr("shop.searchbox.ask")} title={tr("shop.searchbox.ask")} className="-mr-1.5 grid size-8 shrink-0 place-items-center rounded-md text-fg transition hover:bg-surface2">
             <Sparkles className="size-4" />
           </button>
         </div>

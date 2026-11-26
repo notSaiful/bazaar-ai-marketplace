@@ -1,9 +1,11 @@
 "use client";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
-import { ChevronDown, ChevronUp, Pause, Play, Volume2, VolumeX } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, Pause, Play, ShoppingBag, Volume2, VolumeX } from "lucide-react";
 import { useT } from "./lang";
 import { HeartButton } from "./wishlist";
+import { useCart } from "./cart";
+import { ShareButton } from "./share-button";
 import { ProductArt } from "./ui";
 
 export interface FeedItem {
@@ -12,7 +14,7 @@ export interface FeedItem {
   poster: string;
   caption: string;
   durationSec: number;
-  product: { id: string; title: string; price: string; image: string };
+  product: { id: string; title: string; price: string; image: string; stock: number };
   shop: { id: string; name: string; emoji: string; hue: number };
 }
 
@@ -38,6 +40,14 @@ export function ReelsFeed({ items }: { items: FeedItem[] }) {
   const [blocked, setBlocked] = useState(false);
   const [progress, setProgress] = useState(0);
   const [missing, setMissing] = useState<Record<string, boolean>>({});
+  const { add, setOpen: openCart } = useCart();
+  const [added, setAdded] = useState<string | null>(null);
+  // Add without opening the cart drawer, so the video keeps playing; a short toast confirms it.
+  const addToCart = (id: string) => {
+    add(id, 1, { open: false });
+    setAdded(id);
+    window.setTimeout(() => setAdded((cur) => (cur === id ? null : cur)), 2600);
+  };
   const paused = userPaused ?? (reduced || blocked);
 
   // Which ad fills the screen.
@@ -174,6 +184,16 @@ export function ReelsFeed({ items }: { items: FeedItem[] }) {
                   <HeartButton id={it.product.id} title={it.product.title} className="size-11" />
                   <button
                     type="button"
+                    onClick={() => addToCart(it.product.id)}
+                    disabled={it.product.stock < 1}
+                    aria-label={it.product.stock < 1 ? t("samples.soldOut") : `${t("samples.addToCart")}: ${it.product.title}`}
+                    className="grid size-11 place-items-center rounded-full bg-white text-black shadow-sm transition hover:scale-105 active:scale-95 disabled:opacity-40"
+                  >
+                    {added === it.product.id ? <Check className="size-5" /> : <ShoppingBag className="size-5" />}
+                  </button>
+                  <ShareButton path={`/product/${it.product.id}`} title={it.product.title} variant="overlay" />
+                  <button
+                    type="button"
                     onClick={() => setMuted((m) => !m)}
                     aria-pressed={!muted}
                     aria-label={muted ? t("samples.soundOn") : t("samples.soundOff")}
@@ -192,6 +212,12 @@ export function ReelsFeed({ items }: { items: FeedItem[] }) {
           );
         })}
       </div>
+      {added && (
+        <div role="status" className="pop fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-[45] mx-auto flex max-w-sm items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 text-sm text-black shadow-xl md:bottom-6">
+          <span className="flex items-center gap-2 font-medium"><Check className="size-4" aria-hidden /> {t("samples.added")}</span>
+          <button type="button" onClick={() => openCart(true)} className="font-semibold underline underline-offset-4">{t("samples.viewCart")}</button>
+        </div>
+      )}
       {/* Desktop: previous / next */}
       <div className="hidden flex-col justify-center gap-3 pl-4 md:flex">
         <button type="button" onClick={() => go(active - 1)} disabled={active === 0} aria-label={t("samples.prev")} className="grid size-11 place-items-center rounded-full border border-line bg-surface transition hover:bg-surface2 disabled:opacity-40"><ChevronUp className="size-5" /></button>
