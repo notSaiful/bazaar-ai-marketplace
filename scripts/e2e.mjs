@@ -287,6 +287,67 @@ ok("mobile: Add button is >=44px tall", box.height >= 43.5, `h=${box?.height}`);
   await ec.close();
 }
 
+/* 6f. Zoom, sticky buy bar, recently viewed, quick view, recent/trending searches */
+{
+  // Phone
+  const bc = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const bp = await bc.newPage();
+  bp.on("pageerror", (e) => errors.push("browse pageerror: " + e.message));
+  await bp.goto(A + "/product/p_09");
+  await bp.getByRole("button", { name: "Zoom photo" }).click();
+  const zoom = bp.getByRole("dialog", { name: /Photo of/ });
+  ok("zoom: photo opens full screen with the large image", await zoom.isVisible() && /p_09-800\.webp/.test((await zoom.locator("img").getAttribute("src")) ?? ""));
+  await bp.keyboard.press("Escape");
+  ok("zoom: Esc closes the viewer", !(await zoom.isVisible()));
+  const bar = bp.locator("[data-sticky-buy]");
+  const hiddenAtTop = (await bar.getAttribute("aria-hidden")) === "true";
+  await bp.evaluate(() => window.scrollTo(0, 1400));
+  await bp.waitForFunction(() => document.querySelector("[data-sticky-buy]")?.getAttribute("aria-hidden") === "false", null, { timeout: 5000 }).catch(() => {});
+  const shownAfter = (await bar.getAttribute("aria-hidden")) === "false";
+  await bar.getByRole("button", { name: "Add to cart" }).click();
+  ok("sticky bar: hidden at the top, appears after scrolling, adds to cart", hiddenAtTop && shownAfter && (await bp.getByRole("button", { name: /Open cart, 1 items/ }).first().isVisible().catch(() => false)));
+  await bp.goto(A + "/product/p_18");
+  await bp.goto(A + "/");
+  const recent = bp.getByRole("region", { name: "Recently viewed" }).or(bp.locator("section[aria-labelledby='recent-title']"));
+  await recent.first().waitFor({ timeout: 5000 }).catch(() => {});
+  const recentLinks = await recent.first().locator("a").evaluateAll((as) => as.map((a) => a.getAttribute("href")));
+  ok("recently viewed: home lists the products just visited, newest first", recentLinks[0] === "/product/p_18" && recentLinks.includes("/product/p_09"), recentLinks.join(","));
+  await bp.goto(A + "/product/p_18");
+  const recentOnPdp = await bp.locator("section[aria-labelledby='recent-title'] a").evaluateAll((as) => as.map((a) => a.getAttribute("href"))).catch(() => []);
+  ok("recently viewed: product page excludes the current product", recentOnPdp.includes("/product/p_09") && !recentOnPdp.includes("/product/p_18"), recentOnPdp.join(","));
+  await bc.close();
+
+  // Desktop
+  const dc = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const dp = await dc.newPage();
+  dp.on("pageerror", (e) => errors.push("browse desktop pageerror: " + e.message));
+  await dp.goto(A + "/search?category=jewellery");
+  const card = dp.locator("article").first();
+  await card.hover();
+  await card.getByRole("button", { name: /^Quick view:/ }).click();
+  const qv = dp.getByRole("dialog").filter({ hasText: "View full details" });
+  await qv.waitFor({ timeout: 8000 }).catch(() => {});
+  const qvText = await qv.innerText().catch(() => "");
+  ok("quick view: popup shows live price and stock with Add to cart", /₹[\d,]+/.test(qvText) && /In stock|left|Out of stock/.test(qvText) && (await qv.getByRole("button", { name: "Add to cart" }).isVisible()));
+  await dp.keyboard.press("Escape");
+  ok("quick view: Esc closes it", !(await qv.isVisible()));
+
+  await dp.goto(A + "/search");
+  await dp.locator("#nav-search").click();
+  const trend = dp.getByRole("button", { name: "masala chai", exact: true });
+  ok("searches: empty search box shows trending suggestions", await trend.isVisible());
+  await trend.click();
+  await dp.waitForURL(/\/search\?q=masala/, { timeout: 10000 });
+  ok("searches: a trending suggestion runs the search", /q=masala(\+|%20)chai/.test(dp.url()), dp.url().replace(A, ""));
+  await dp.locator("#nav-search").fill("");
+  await dp.locator("#nav-search").click();
+  const recentBtn = dp.locator("li").filter({ hasText: "masala chai" }).first();
+  ok("searches: the search is saved under Recent searches", await dp.getByText("Recent searches").isVisible() && await recentBtn.isVisible());
+  await dp.getByRole("button", { name: "Remove masala chai" }).click();
+  ok("searches: a recent search can be removed", !(await dp.getByText("Recent searches").isVisible().catch(() => false)));
+  await dc.close();
+}
+
 /* 6e. No raw translation keys on screen (English and Hindi) */
 {
   const kc = await browser.newContext({ viewport: { width: 1280, height: 900 } });

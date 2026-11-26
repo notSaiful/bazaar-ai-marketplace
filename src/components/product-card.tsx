@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { QuickViewButton } from "./quick-view";
 import type { Product } from "@/lib/types";
 import { getSeller } from "@/lib/store";
 import { formatINR } from "@/lib/money";
@@ -31,6 +32,7 @@ export function ProductCard({ p, lang = "en", why, eager, defer }: { p: Product;
           )}
         </Link>
         <HeartButton id={p.id} title={name} className="absolute right-3 top-3" />
+        <QuickViewButton id={p.id} image={artUrl(p)} title={name} rating={p.rating} />
       </div>
       <div className="space-y-0.5 px-1">
         <Link href={`/product/${p.id}`} className="line-clamp-1 text-sm font-medium tracking-tight hover:underline">{name}</Link>

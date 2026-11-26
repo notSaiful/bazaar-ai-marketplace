@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { RecentlyViewed } from "@/components/recently-viewed";
 import type { CSSProperties, ReactNode } from "react";
 import { ArrowRight, ArrowUpRight, ChevronRight } from "lucide-react";
 import { CATEGORIES } from "@/lib/catalog";
@@ -50,7 +51,7 @@ export default async function Home() {
         </div>
         <h1 className="rise text-[36px] font-semibold leading-[1.05] tracking-tight sm:text-[52px]" style={d(60)}>{t("hero_title", s.lang)}</h1>
         <p className="rise mx-auto mt-4 max-w-xl text-base text-muted sm:text-lg" style={d(120)}>{t("hero_sub", s.lang)}</p>
-        <div className="rise mx-auto mt-7 max-w-2xl text-left" style={d(180)}><SearchBox big placeholder={t("search_ph", s.lang)} /></div>
+        <div className="rise relative z-20 mx-auto mt-7 max-w-2xl text-left" style={d(180)}><SearchBox big placeholder={t("search_ph", s.lang)} /></div>
         <p className="rise mt-3 text-xs text-muted" style={d(220)}>{t("shop.home.tryHint", s.lang)}</p>
       </section>
 
@@ -66,6 +67,8 @@ export default async function Home() {
           {popular.map((p, i) => (i < 4 ? <div key={p.id}><ProductCard p={p} lang={s.lang} eager={i < 2} /></div> : <div key={p.id} data-reveal style={d((i % 4) * 80)}><ProductCard p={p} lang={s.lang} defer /></div>))}
         </div>
       </section>
+
+      <RecentlyViewed />
 
       {/* What's new: compact list rows */}
       <section aria-labelledby="new">

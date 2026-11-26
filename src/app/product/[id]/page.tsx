@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { ZoomableImage } from "@/components/zoomable-image";
+import { StickyBuyBar } from "@/components/sticky-buy-bar";
+import { RecentlyViewed, RecordView } from "@/components/recently-viewed";
 import { ShareButton } from "@/components/share-button";
 import { notFound } from "next/navigation";
 import { getProduct, getSeller, isVisible, publicReviews } from "@/lib/store";
@@ -48,7 +51,7 @@ export default async function ProductPage({ params }: { params: P }) {
     <div className="grid gap-10 md:grid-cols-2">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ld }} />
       <figure>
-        <div className="overflow-hidden rounded-xl bg-surface2"><ProductArt src={artUrl(p)} alt={p.title} eager sizes="(min-width: 1280px) 580px, (min-width: 768px) 45vw, 100vw" className="aspect-square" /></div>
+        <div className="relative overflow-hidden rounded-xl bg-surface2"><ZoomableImage src={artUrl(p)} title={hi ? p.titleHi : p.title} /><ProductArt src={artUrl(p)} alt={p.title} eager sizes="(min-width: 1280px) 580px, (min-width: 768px) 45vw, 100vw" className="aspect-square" /></div>
         {credit && p.image === `/products/${p.id}.jpg` && (
           <figcaption className="mt-2 text-xs text-muted">
             {t("shop.product.photo", L)} <a href={credit.source} target="_blank" rel="noopener noreferrer" className="underline hover:text-fg">{credit.creator || t("shop.unknown", L)}</a>, <a href={credit.licenseUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-fg">{licenseLabel(credit.license)}</a>. {t("shop.product.illustrative", L)}
@@ -68,7 +71,7 @@ export default async function ProductPage({ params }: { params: P }) {
           )}
         </div>
         <div className="flex items-center gap-4"><span className="text-3xl font-semibold tabular-nums">{formatINR(p.price)}</span><StockBadge id={p.id} initial={p.stock} threshold={p.lowStockThreshold} /></div>
-        <div className="flex gap-2">
+        <div id="buy-box" className="flex gap-2">
           <AddToCart id={p.id} stock={p.stock} className="h-12 flex-1" />
           <ShareButton path={`/product/${p.id}`} title={hi ? p.titleHi : p.title} />
         </div>
@@ -79,7 +82,10 @@ export default async function ProductPage({ params }: { params: P }) {
         </details>
       </div>
     </div>
+    <StickyBuyBar targetId="buy-box" id={p.id} stock={p.stock} price={formatINR(p.price)} title={hi ? p.titleHi : p.title} />
+    <RecordView item={{ id: p.id, title: p.title, titleHi: p.titleHi, image: artUrl(p) }} />
     <ReviewsSection p={p} canReview={s.role === "customer" && isVisible(p)} mine={p.reviews.find((r) => r.customerId === s.customerId)} defaultName={s.role === "customer" ? accountName(s.role, s.sellerId) : ""} lang={L} />
+    <RecentlyViewed exclude={p.id} />
     </div>
   );
 }
