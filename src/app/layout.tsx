@@ -3,6 +3,7 @@ import "./globals.css";
 import { Header } from "@/components/header";
 import { CartProvider, CartDrawer } from "@/components/cart";
 import { AssistantLazy } from "@/components/assistant-lazy";
+import { aiEnabled } from "@/lib/claude";
 import { AssistantBoundary } from "@/components/assistant-boundary";
 import { getSession } from "@/lib/session";
 import { LangToggle } from "@/components/lang-toggle";
@@ -67,7 +68,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </footer>
             </div>
           </div>
-          {shop && <AssistantBoundary><AssistantLazy /></AssistantBoundary>}
+          {shop && <AssistantBoundary><AssistantLazy aiLive={aiEnabled()} /></AssistantBoundary>}
           {shop && <BottomNav />}
           <CartDrawer />
           <RevealObserver />

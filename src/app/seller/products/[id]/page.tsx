@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { aiEnabled } from "@/lib/claude";
 import { getProduct, getSeller } from "@/lib/store";
 import { getSession } from "@/lib/session";
 import { t } from "@/lib/i18n";
@@ -23,7 +24,7 @@ export default async function EditProduct({ params, searchParams }: { params: Pr
       <PageHeader title={t("seller.products.edit", s.lang)} action={<StatusPill status={p.status} lang={s.lang} />} />
       <Flash sp={sp} />
       {p.flagReason && <p className="rounded-xl bg-bad/10 px-4 py-3 text-sm text-bad">{t("seller.products.flagged", s.lang, { reason: localizeMsg(p.flagReason, s.lang) })}</p>}
-      <ProductForm canPublish={seller.status === "active"} initial={{ id: p.id, title: p.title, titleHi: p.titleHi, description: p.description, descriptionHi: p.descriptionHi, category: p.category, tags: p.tags.join(", "), attributes: Object.entries(p.attributes).map(([k, v]) => `${k}: ${v}`).join("\n"), price: String(p.price / 100), mrp: String(p.mrp / 100), stock: String(p.stock), hue: p.hue, emoji: p.emoji, image: p.image, aiGenerated: p.aiGenerated }} />
+      <ProductForm canPublish={seller.status === "active"} aiLive={aiEnabled()} initial={{ id: p.id, title: p.title, titleHi: p.titleHi, description: p.description, descriptionHi: p.descriptionHi, category: p.category, tags: p.tags.join(", "), attributes: Object.entries(p.attributes).map(([k, v]) => `${k}: ${v}`).join("\n"), price: String(p.price / 100), mrp: String(p.mrp / 100), stock: String(p.stock), hue: p.hue, emoji: p.emoji, image: p.image, aiGenerated: p.aiGenerated }} />
     </div>
   );
 }

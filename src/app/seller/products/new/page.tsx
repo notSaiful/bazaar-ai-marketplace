@@ -1,4 +1,5 @@
 import { getSession } from "@/lib/session";
+import { aiEnabled } from "@/lib/claude";
 import { getSeller } from "@/lib/store";
 import { t } from "@/lib/i18n";
 import { ProductForm } from "@/components/product-form";
@@ -16,7 +17,7 @@ export default async function NewProduct({ searchParams }: { searchParams: Promi
     <div className="mx-auto max-w-2xl space-y-6">
       <h2 className="text-xl font-semibold">{t("seller.products.addTitle", s.lang)}</h2>
       <Flash sp={sp} />
-      <ProductForm studio canPublish={seller.status === "active"} />
+      <ProductForm studio canPublish={seller.status === "active"} aiLive={aiEnabled()} />
     </div>
   );
 }

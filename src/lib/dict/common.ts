@@ -48,6 +48,8 @@ export const common: Dict = {
   "theme.toggle": { en: "Toggle dark mode", hi: "डार्क मोड बदलें" },
   "account.label": { en: "Account", hi: "खाता" },
 
+  "ai.demo": { en: "AI: demo mode", hi: "AI: डेमो मोड" },
+  "ai.demoHint": { en: "Claude is not connected yet, so answers come from built-in rules. It switches on automatically when an API key is added.", hi: "Claude अभी जुड़ा नहीं है, इसलिए जवाब पहले से बने नियमों से आ रहे हैं। API key जुड़ते ही यह अपने आप चालू हो जाएगा।" },
   "clock.ist": { en: "IST", hi: "IST" },
 
   "action.tryAgain": { en: "Try again", hi: "फिर से कोशिश करें" },

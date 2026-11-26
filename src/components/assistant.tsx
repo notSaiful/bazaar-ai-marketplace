@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Bot, Send, Sparkles, X, ShoppingCart, ChevronDown, MessageCircle } from "lucide-react";
 import { useCart } from "./cart";
+import { AiDemoBadge } from "./ai-demo-badge";
 import { ProductArt, btn } from "./ui";
 import { formatINR } from "@/lib/money";
 import { artUrl, cn } from "@/lib/utils";
@@ -14,7 +15,7 @@ interface Msg { from: "me" | "bot"; text: string; key?: string; data?: Assistant
 // Hinglish example prompts: kept as-is in both languages (the assistant understands them either way).
 const PROMPTS = ["Diwali gift 2000 tak maa ke liye", "sardi ke liye shawl", "diya aur masala chai"];
 
-export function Assistant() {
+export function Assistant({ aiLive = false }: { aiLive?: boolean }) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([{ from: "bot", text: "", key: "shop.assistant.greeting" }]);
@@ -65,7 +66,7 @@ export function Assistant() {
       {open && (
         <section role="dialog" aria-label={t("assistant")} className="pop fixed inset-x-0 bottom-0 z-[65] flex h-[85dvh] flex-col rounded-t-3xl border border-line bg-bg shadow-2xl sm:inset-x-auto sm:bottom-4 sm:right-4 sm:h-[620px] sm:w-[400px] sm:rounded-3xl">
           <header className="flex items-center justify-between border-b border-line px-4 py-3">
-            <div className="flex items-center gap-2"><span className="grid size-8 place-items-center rounded-full bg-accent-soft text-accent"><Bot className="size-4" /></span><div><div className="text-sm font-semibold">{t("shop.assistant.title")}</div><div className="text-xs text-muted">{t("shop.assistant.langs")}</div></div></div>
+            <div className="flex items-center gap-2"><span className="grid size-8 place-items-center rounded-full bg-accent-soft text-accent"><Bot className="size-4" /></span><div><div className="text-sm font-semibold">{t("shop.assistant.title")}</div><div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">{t("shop.assistant.langs")}{!aiLive && <AiDemoBadge />}</div></div></div>
             <button aria-label={t("shop.assistant.close")} onClick={() => setOpen(false)} className="grid size-11 place-items-center rounded-lg hover:bg-surface2"><X className="size-4" /></button>
           </header>
           <div className="flex-1 space-y-3 overflow-y-auto p-4" aria-live="polite">

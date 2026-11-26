@@ -1,5 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
+import { AiDemoBadge } from "./ai-demo-badge";
 import { Camera, Loader2, RotateCcw } from "lucide-react";
 import { saveProductAction } from "@/app/actions";
 import { CATEGORIES } from "@/lib/catalog";
@@ -33,7 +34,7 @@ async function downscale(file: File): Promise<string> {
   return c.toDataURL("image/jpeg", 0.8);
 }
 
-export function ProductForm({ initial = EMPTY, studio = false, canPublish = true }: { initial?: FormInitial; studio?: boolean; canPublish?: boolean }) {
+export function ProductForm({ initial = EMPTY, studio = false, canPublish = true, aiLive = false }: { initial?: FormInitial; studio?: boolean; canPublish?: boolean; aiLive?: boolean }) {
   const t = useT();
   const lang = useLang();
   const [f, setF] = useState<FormInitial>(initial);
@@ -84,6 +85,7 @@ export function ProductForm({ initial = EMPTY, studio = false, canPublish = true
 
       {showPhoto && (
         <section className="space-y-4">
+          {!aiLive && <div className="flex justify-end"><AiDemoBadge /></div>}
           <div className="grid aspect-[2/1] place-items-center overflow-hidden rounded-3xl border border-dashed border-line bg-surface2">
             {preview ? <div className="h-full"><ProductArt src={preview} alt={t("seller.form.photoAlt")} className="h-full w-auto" /></div> : <p className="px-6 text-center text-muted">{t("seller.form.photoPrompt")}</p>}
           </div>

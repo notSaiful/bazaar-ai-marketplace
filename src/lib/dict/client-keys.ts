@@ -3,6 +3,8 @@
 export const CLIENT_KEYS: readonly string[] = [
   "account.label",
   "action.tryAgain",
+  "ai.demo",
+  "ai.demoHint",
   "assistant",
   "checkout.account.language",
   "checkout.account.theme",
