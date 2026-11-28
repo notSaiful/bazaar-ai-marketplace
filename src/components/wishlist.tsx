@@ -28,7 +28,8 @@ export function WishlistProvider({ initial, children }: { initial: string[]; chi
   return <WishCtx.Provider value={value}>{children}</WishCtx.Provider>;
 }
 
-export function HeartButton({ id, title, className }: { id: string; title: string; className?: string }) {
+/** `overlay`: white outline icon for use on top of photos and video (Samples feed). */
+export function HeartButton({ id, title, className, overlay }: { id: string; title: string; className?: string; overlay?: boolean }) {
   const { has, toggle } = useWishlist();
   const t = useT();
   const on = has(id);
@@ -40,7 +41,7 @@ export function HeartButton({ id, title, className }: { id: string; title: strin
       aria-label={on ? t("shop.wish.remove", { title }) : t("shop.wish.save", { title })}
       className={cn("grid size-9 place-items-center rounded-full bg-surface/90 shadow-sm backdrop-blur transition hover:scale-110 active:scale-95", className)}
     >
-      <Heart className={cn("size-4 transition", on ? "fill-bad text-bad" : "text-fg")} />
+      <Heart className={cn("size-4 transition", on ? "fill-bad text-bad" : overlay ? "text-white" : "text-fg", overlay && "size-5")} />
     </button>
   );
 }

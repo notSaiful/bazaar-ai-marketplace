@@ -121,3 +121,14 @@ body:has([data-sticky-buy][aria-hidden="false"]) .compare-tray { bottom: calc(8.
 @media (min-width: 768px) {
   .compare-tray, body:has([data-sticky-buy][aria-hidden="false"]) .compare-tray { bottom: 1.25rem; }
 }
+
+/* Samples: double-tap heart */
+@keyframes heart-burst {
+  0% { transform: scale(.3); opacity: 0; }
+  15% { transform: scale(1.15); opacity: 1; }
+  30% { transform: scale(.95); }
+  45%, 75% { transform: scale(1); opacity: 1; }
+  100% { transform: translateY(-36px) scale(1.05); opacity: 0; }
+}
+.heart-burst { animation: heart-burst .9s cubic-bezier(.22,1,.36,1) forwards; }
+@media (prefers-reduced-motion: reduce) { .heart-burst { animation: fade-in .2s ease-out; } }

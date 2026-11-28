@@ -188,7 +188,8 @@ ok("mobile: Add button is >=44px tall", box.height >= 43.5, `h=${box?.height}`);
   await sp.getByRole("button", { name: "Turn sound on" }).first().click();
   ok("samples: sound toggle unmutes", await sp.evaluate(() => !document.querySelector("video").muted));
   await sp.locator("[data-i='0'] button[data-tap]").click();
-  ok("samples: tap pauses the video", await sp.evaluate(() => document.querySelector("video").paused));
+  // A single tap waits briefly (it could be the start of a double-tap), so poll for the pause.
+  ok("samples: tap pauses the video", await sp.waitForFunction(() => document.querySelector("video").paused, null, { timeout: 2000 }).then(() => true).catch(() => false));
   await sp.evaluate(() => { const b = document.querySelector("[aria-roledescription=carousel]"); b.scrollTo({ top: b.clientHeight * 2 }); });
   await sp.waitForTimeout(1500);
   const after = await sp.evaluate(() => [...document.querySelectorAll("video")].map((v) => v.closest("[data-i]")?.getAttribute("data-i")));
@@ -239,6 +240,48 @@ ok("mobile: Add button is >=44px tall", box.height >= 43.5, `h=${box?.height}`);
   await up.goto(A + "/admin");
   ok("samples: admin queue shows the held ad with Publish / Remove", (await up.locator("body").innerText()).includes("Video ad held for"));
   await uc.close();
+}
+
+/* 6c2. Samples: category chips, read more, double-tap to save, desktop side panel */
+{
+  const fc = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const fp = await fc.newPage();
+  fp.on("pageerror", (e) => errors.push("samples2 pageerror: " + e.message));
+  await fp.goto(A + "/samples");
+  const chipsG = fp.getByRole("group", { name: "Filter ads by category" });
+  await chipsG.getByRole("button", { name: "Jewellery" }).click();
+  const slides = await fp.locator("[aria-roledescription=slide]").evaluateAll((ss) => ss.map((s) => s.getAttribute("aria-label")));
+  ok("samples: Jewellery chip shows only jewellery ads", slides.length === 2 && slides.every((l) => /Meenakari/.test(l)), slides.join(" | "));
+  await chipsG.getByRole("button", { name: "All" }).click();
+  ok("samples: All brings every ad back", (await fp.locator("[aria-roledescription=slide]").count()) >= 6);
+  await fp.evaluate(() => { const b = document.querySelector("[aria-roledescription=carousel]"); b.scrollTo({ top: b.clientHeight }); });
+  await fp.waitForTimeout(900);
+  const more = fp.locator("[data-i='1']").getByRole("button", { name: "more", exact: true });
+  await more.click();
+  ok("samples: long captions open with “more”", (await fp.locator("[data-i='1']").getByRole("button", { name: "less", exact: true }).getAttribute("aria-expanded")) === "true");
+  const nextPlays = await fp.waitForFunction(() => { const v = document.querySelector("[data-i='1'] video"); return v && !v.paused && v.currentTime > 0.2; }, null, { timeout: 8000 }).then(() => true).catch(() => false);
+  ok("samples: the next ad plays after scrolling (even if the first was still loading)", nextPlays);
+  await fp.locator("[data-i='1'] button[data-tap]").dblclick();
+  await fp.waitForTimeout(500);
+  const wl = (await fc.cookies()).find((c) => c.name === "wl")?.value ?? "";
+  const stillPlaying = await fp.evaluate(() => { const v = document.querySelector("[data-i='1'] video"); return !!v && !v.paused; });
+  ok("samples: double-tap saves to the wishlist (toast) and does not pause", wl.includes("p_18") && stillPlaying && (await fp.getByRole("status").filter({ hasText: "Saved to your wishlist" }).isVisible()), `wl=${wl} playing=${stillPlaying}`);
+  await fc.close();
+
+  const dc2 = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const dp2 = await dc2.newPage();
+  dp2.on("pageerror", (e) => errors.push("samples desktop pageerror: " + e.message));
+  await dp2.goto(A + "/samples");
+  const panel = dp2.getByRole("complementary", { name: "Product in this ad" });
+  const pt = await panel.innerText().catch(() => "");
+  ok("samples (desktop): side panel shows the product with price, stock and Add to cart", /Brass Diya Set of 6/.test(pt) && /₹/.test(pt) && /In stock|left/.test(pt) && (await panel.getByRole("button", { name: "Add to cart" }).isVisible()), pt.slice(0, 60));
+  await dp2.getByRole("button", { name: "Next ad" }).click();
+  await dp2.waitForFunction(() => !document.querySelector("aside[aria-label='Product in this ad']")?.textContent?.includes("Brass Diya"), null, { timeout: 6000 }).catch(() => {});
+  const pt2 = await panel.innerText().catch(() => "");
+  ok("samples (desktop): Next ad updates the panel", !!pt2 && !pt2.includes("Brass Diya"), pt2.slice(0, 40));
+  await panel.getByRole("button", { name: "Add to cart" }).click();
+  ok("samples (desktop): Add to cart from the panel opens the cart", await dp2.getByRole("dialog", { name: "Shopping cart" }).waitFor({ timeout: 6000 }).then(() => true).catch(() => false));
+  await dc2.close();
 }
 
 /* 6d. Share, add to cart from Samples, guided tour */
