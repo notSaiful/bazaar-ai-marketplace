@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { useAfterLoad } from "@/lib/use-after-load";
 import { Clapperboard, Heart, Home, LayoutGrid, ShoppingBag, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCart } from "./cart";
@@ -10,11 +12,18 @@ import { useT } from "./lang";
 /** Phone-only tab bar from the PRD storefront mockup. */
 export function BottomNav() {
   const path = usePathname();
+  const router = useRouter();
+  const ready = useAfterLoad();
   const { count, setOpen } = useCart();
   const t = useT();
   const dark = path === "/samples";
   const tab = "relative flex flex-1 flex-col items-center justify-center gap-1 py-2 text-[11px] transition-colors";
   const on = (href: string) => (href === "/" ? path === "/" : path === href || path.startsWith(href + "/"));
+  // Tabs prefetch once the page has loaded, not the moment they appear, so they never compete with the
+  // first paint (the links themselves use prefetch={false}).
+  useEffect(() => {
+    if (ready) for (const href of ["/", "/search", "/samples", "/wishlist", "/account"]) if (href !== path) router.prefetch(href);
+  }, [ready, path, router]);
   const links = [
     { href: "/", label: t("nav.home"), icon: Home },
     { href: "/search", label: t("nav.categories"), icon: LayoutGrid },
@@ -25,7 +34,7 @@ export function BottomNav() {
     <nav aria-label={t("nav.tabs")} className={cn("fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden", dark ? "dark-tabs border-white/10 bg-black/85 text-white" : "border-line bg-bg/95")}>
       <div className="flex">
         {links.map(({ href, label, icon: Icon }) => (
-          <Link key={href} href={href} data-tour={href === "/samples" ? "samples" : undefined} aria-current={on(href) ? "page" : undefined} className={cn(tab, on(href) ? (dark ? "font-semibold text-white" : "font-semibold text-fg") : dark ? "text-white/60" : "text-muted")}>
+          <Link key={href} href={href} prefetch={false} data-tour={href === "/samples" ? "samples" : undefined} aria-current={on(href) ? "page" : undefined} className={cn(tab, on(href) ? (dark ? "font-semibold text-white" : "font-semibold text-fg") : dark ? "text-white/60" : "text-muted")}>
             <span className="relative"><Icon className="size-5" />{href === "/wishlist" && <WishlistCount className="-right-2.5 -top-2 min-w-4 text-[10px]" />}</span>
             {label}
           </Link>
@@ -37,7 +46,7 @@ export function BottomNav() {
           </span>
           {t("nav.cart")}
         </button>
-        <Link href="/account" aria-current={on("/account") ? "page" : undefined} className={cn(tab, on("/account") ? (dark ? "font-semibold text-white" : "font-semibold text-fg") : dark ? "text-white/60" : "text-muted")}>
+        <Link href="/account" prefetch={false} aria-current={on("/account") ? "page" : undefined} className={cn(tab, on("/account") ? (dark ? "font-semibold text-white" : "font-semibold text-fg") : dark ? "text-white/60" : "text-muted")}>
           <UserRound className="size-5" />
           {t("nav.account")}
         </Link>

@@ -48,7 +48,10 @@ export function ReelsFeed({ items, categories }: { items: FeedItem[]; categories
   const [cat, setCat] = useState("");
   const [active, setActive] = useState(0);
   const [muted, setMuted] = useState(true);
-  /** null = default (autoplay unless reduced motion); true/false = the user's choice for this ad. */
+  /**
+   * null = default: always autoplay (muted). Shoppers asked for no play button, so this ignores the
+   * reduced-motion setting; tap-to-pause and the pause button stay available. true/false = the user's choice.
+   */
   const [userPaused, setUserPaused] = useState<boolean | null>(null);
   const [blocked, setBlocked] = useState(false);
   const [missing, setMissing] = useState<Record<string, boolean>>({});
@@ -60,7 +63,9 @@ export function ReelsFeed({ items, categories }: { items: FeedItem[]; categories
   const [toast, setToast] = useState<{ kind: "cart" | "wish"; key: number } | null>(null);
   const { add, setOpen: openCart } = useCart();
   const wish = useWishlist();
-  const paused = userPaused ?? (reduced || blocked);
+  // `blocked` (the browser refused autoplay, e.g. iPhone Low Power Mode) is not shown as a pause: the
+  // video starts on the viewer's next touch, swipe or key press (see below).
+  const paused = userPaused ?? false;
   const shown = cat ? items.filter((it) => it.product.category === cat) : items;
   const current = shown[Math.min(active, shown.length - 1)];
 
@@ -118,6 +123,22 @@ export function ReelsFeed({ items, categories }: { items: FeedItem[]; categories
     });
   }, [active, paused, muted, mediaReady, cat]);
 
+  // Autoplay refused: play() inside the very next user gesture is always allowed (and unlocks the element
+  // on iOS), so start the ad on any touch, swipe, click or key press. No play button needed.
+  const gestureStart = useRef(-1e9);
+  useEffect(() => {
+    if (!blocked || paused) return;
+    const retry = (e: Event) => {
+      const v = vids.current.get(active);
+      if (!v) return;
+      gestureStart.current = e.timeStamp;
+      v.play().then(() => setBlocked(false)).catch(() => {});
+    };
+    const events = ["pointerup", "touchend", "click", "keydown"] as const;
+    events.forEach((e) => window.addEventListener(e, retry, { capture: true, passive: true }));
+    return () => events.forEach((e) => window.removeEventListener(e, retry, { capture: true }));
+  }, [blocked, active, paused]);
+
   // Tap = play/pause, double-tap = save to wishlist with a heart burst. The single tap waits briefly so a
   // double-tap never also pauses. Keyboard activation (detail 0) toggles at once.
   const pausedRef = useRef(paused);
@@ -127,6 +148,9 @@ export function ReelsFeed({ items, categories }: { items: FeedItem[]; categories
   useEffect(() => () => window.clearTimeout(tapTimer.current), []);
   const onTap = (e: MouseEvent<HTMLButtonElement>, i: number, it: FeedItem) => {
     if (i !== active) return;
+    // Autoplay was refused: this tap is what starts the video (the gesture listener above), so don't pause.
+    // The click can arrive after playback already began, hence the short window as well.
+    if (blocked || e.timeStamp - gestureStart.current < 700) return;
     if (e.detail === 0) { setUserPaused(!paused); return; }
     const now = e.timeStamp;
     if (e.detail >= 2 || now - lastTap.current < DOUBLE_TAP_MS) {

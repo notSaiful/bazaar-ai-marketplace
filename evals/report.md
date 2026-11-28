@@ -1,6 +1,6 @@
 # Eval & invariant report
 
-Generated 2026-11-28T13:44:19.464Z · 156 checks · **156 passed, 0 failed**
+Generated 2026-11-28T14:12:18.661Z · 156 checks · **156 passed, 0 failed**
 
 | Group | Passed | Total |
 |---|---|---|
@@ -84,7 +84,7 @@ All checks passed.
 - ✅ [search] golden: “achaar”
 - ✅ [search] golden: “kurtaa”
 - ✅ [search] golden hit-rate ≥ 90% (18/18)
-- ✅ [search] p95 latency < 150 ms (NFR-03) (p95=2.77ms)
+- ✅ [search] p95 latency < 150 ms (NFR-03) (p95=1.77ms)
 - ✅ [search] price filter parsed from “under 500”
 - ✅ [search] flagged listing never appears in search
 - ✅ [agent] price/stock/budget accuracy: “diwali gift 2000 tak maa ke liye”
@@ -127,7 +127,7 @@ All checks passed.
 - ✅ [listing] tiny/blank photo prompts a retake
 - ✅ [listing] draft has Hindi + English copy and a price hint, but no final price field
 - ✅ [persistence] replaying the mutation log on a fresh seed reproduces the exact state (18 logged actions)
-- ✅ [persistence] log fits the signed cookie budget (957 bytes in 1 cookie(s))
+- ✅ [persistence] log fits the signed cookie budget (959 bytes in 1 cookie(s))
 - ✅ [persistence] cookie round-trip returns the same log
 - ✅ [persistence] tampered cookie is rejected (ignored, never trusted)
 - ✅ [persistence] seed order ids are deterministic across cold starts (grp_seed_NN)
@@ -157,7 +157,7 @@ All checks passed.
 - ✅ [samples] reads MOV with a 64-bit movie header and moov at the end ({"ok":true,"mime":"video/quicktime","durationSec":42})
 - ✅ [samples] rejects over 60 s, under 3 s, audio-only, a PNG renamed .mp4, a wrong declared type, truncated and oversized files (long:too_long short:too_short audio:no_video png:type declared:type trunc:unreadable big:too_big)
 - ✅ [samples] poster must be a real JPEG/WebP/PNG under the size limit
-- ✅ [samples] demo feed has 6 seeded ads, all with a video and poster
+- ✅ [samples] demo feed has 16 seeded ads, all with a video and poster
 - ✅ [samples] rejects another seller's product, hidden products, unapproved shops, >60 s, oversized, wrong type, bad storage keys and bad captions (other:product hidden:product_hidden pending:not_active long:too_long big:too_big mime:type key:key short:caption_short longCap:caption_long)
 - ✅ [samples] valid ad goes live with a cleaned caption and points at the media route
 - ✅ [samples] prompt-injection and link captions are held: not in the feed, queued for admin

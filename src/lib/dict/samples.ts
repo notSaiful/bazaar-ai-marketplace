@@ -25,7 +25,7 @@ export const samples: Dict = {
   "samples.swipe": { en: "Swipe up for more", hi: "और देखने के लिए ऊपर स्वाइप करें" },
   "samples.empty.title": { en: "No samples yet", hi: "अभी कोई सैंपल नहीं" },
   "samples.empty.hint": { en: "Short videos from makers will show up here.", hi: "कारीगरों के छोटे वीडियो यहाँ दिखेंगे।" },
-  "samples.credits": { en: "The demo videos in Samples are short clips (a wide shot, a close-up and an end card) made from these photos (diyas, jhumkas, Nehru jacket, honey, desk lamp, Kundan set), under the same licenses.", hi: "सैंपल के डेमो वीडियो इन्हीं फ़ोटो (दीये, झुमके, नेहरू जैकेट, शहद, डेस्क लैंप, कुंदन सेट) से बनी छोटी क्लिप (पूरा दृश्य, क्लोज़-अप और आख़िरी कार्ड) हैं, उन्हीं लाइसेंस के तहत।" },
+  "samples.credits": { en: "The 16 demo videos in Samples are short clips (a wide shot, a close-up and an end card) made from these same product photos, under the same licenses.", hi: "सैंपल के 16 डेमो वीडियो इन्हीं उत्पाद फ़ोटो से बनी छोटी क्लिप (पूरा दृश्य, क्लोज़-अप और आख़िरी कार्ड) हैं, उन्हीं लाइसेंस के तहत।" },
   "samples.unavailable": { en: "This demo video is stored on another server. Showing the poster instead.", hi: "यह डेमो वीडियो किसी दूसरे सर्वर पर है, इसलिए पोस्टर दिखाया जा रहा है।" },
 
   "seller.nav.ads": { en: "Ads", hi: "विज्ञापन" },

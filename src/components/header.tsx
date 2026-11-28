@@ -23,7 +23,7 @@ export async function Header() {
     <header className="sticky top-0 z-30 border-b border-line bg-bg/80 backdrop-blur-xl">
       <div className="flex min-h-16 flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:px-6">
         {!shop && <Suspense><MobileNav d={sideNavData(s)} /></Suspense>}
-        <Link href="/" className={`flex items-center gap-2 text-base font-semibold tracking-tight ${shop ? "" : "lg:hidden"}`}>
+        <Link href="/" prefetch={false} className={`flex items-center gap-2 text-base font-semibold tracking-tight ${shop ? "" : "lg:hidden"}`}>
           {shop && <LogoMark className="size-8" />}Bazaar
         </Link>
         {shop ? (

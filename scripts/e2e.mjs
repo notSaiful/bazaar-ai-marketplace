@@ -251,7 +251,7 @@ ok("mobile: Add button is >=44px tall", box.height >= 43.5, `h=${box?.height}`);
   const chipsG = fp.getByRole("group", { name: "Filter ads by category" });
   await chipsG.getByRole("button", { name: "Jewellery" }).click();
   const slides = await fp.locator("[aria-roledescription=slide]").evaluateAll((ss) => ss.map((s) => s.getAttribute("aria-label")));
-  ok("samples: Jewellery chip shows only jewellery ads", slides.length === 2 && slides.every((l) => /Meenakari/.test(l)), slides.join(" | "));
+  ok("samples: Jewellery chip shows only jewellery ads", slides.length >= 2 && slides.every((l) => /Meenakari/.test(l)), slides.join(" | "));
   await chipsG.getByRole("button", { name: "All" }).click();
   ok("samples: All brings every ad back", (await fp.locator("[aria-roledescription=slide]").count()) >= 6);
   await fp.evaluate(() => { const b = document.querySelector("[aria-roledescription=carousel]"); b.scrollTo({ top: b.clientHeight }); });
@@ -282,6 +282,38 @@ ok("mobile: Add button is >=44px tall", box.height >= 43.5, `h=${box?.height}`);
   await panel.getByRole("button", { name: "Add to cart" }).click();
   ok("samples (desktop): Add to cart from the panel opens the cart", await dp2.getByRole("dialog", { name: "Shopping cart" }).waitFor({ timeout: 6000 }).then(() => true).catch(() => false));
   await dc2.close();
+}
+
+/* 6c3. Samples autoplay on phones: no play button with reduced motion, and a refused autoplay starts on the first touch */
+{
+  const rc = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, reducedMotion: "reduce" });
+  const rp = await rc.newPage();
+  rp.on("pageerror", (e) => errors.push("autoplay pageerror: " + e.message));
+  await rp.goto(A + "/samples");
+  const rmPlays = await rp.waitForFunction(() => { const v = document.querySelector("[data-i='0'] video"); return v && !v.paused && v.currentTime > 0.2; }, null, { timeout: 12000 }).then(() => true).catch(() => false);
+  ok("samples: autoplays even with reduce motion on (no play button)", rmPlays && !(await rp.getByRole("button", { name: "Play video" }).first().isVisible().catch(() => false)));
+  await rc.close();
+
+  // Simulate a browser that refuses autoplay until the first user gesture (iPhone Low Power Mode).
+  const bc2 = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  // (navigator.userActivation is already "active" in automation, so track real gestures ourselves.)
+  await bc2.addInitScript(() => {
+    let touched = false;
+    for (const ev of ["pointerup", "touchend", "click", "keydown"]) window.addEventListener(ev, () => { touched = true; }, true);
+    const play = HTMLMediaElement.prototype.play;
+    HTMLMediaElement.prototype.play = function () { return touched ? play.call(this) : Promise.reject(new DOMException("blocked", "NotAllowedError")); };
+  });
+  const bp2 = await bc2.newPage();
+  await bp2.goto(A + "/samples");
+  await bp2.waitForSelector("[data-i='0'] video", { timeout: 12000 }).catch(() => {});
+  await bp2.waitForTimeout(800);
+  const overlay = await bp2.locator("[data-i='0'] .size-16").count();
+  await bp2.touchscreen.tap(195, 420);
+  const started = await bp2.waitForFunction(() => { const v = document.querySelector("[data-i='0'] video"); return v && !v.paused && v.currentTime > 0.2; }, null, { timeout: 8000 }).then(() => true).catch(() => false);
+  await bp2.waitForTimeout(500);
+  const stillPlaying = await bp2.evaluate(() => !document.querySelector("[data-i='0'] video").paused);
+  ok("samples: refused autoplay shows no play button and starts on the first tap (and stays playing)", overlay === 0 && started && stillPlaying, `overlay=${overlay} started=${started} playing=${stillPlaying}`);
+  await bc2.close();
 }
 
 /* 6d. Share, add to cart from Samples, guided tour */

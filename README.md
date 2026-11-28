@@ -30,7 +30,7 @@ Set `DEMO_STATE_SECRET` in production. Set `DEMO_MODE=off` to disable the role s
 ## Samples (short video ads)
 Buyers get a vertical, one-ad-per-screen feed at `/samples`; sellers upload at `/seller/ads`. The server re-checks every upload: real MP4/MOV signature (`ftyp`), duration read from the movie header (3 to 60 s), a video track, size, the product belongs to the seller, and the caption is cleaned. Captions with prompt-injection patterns or links are held for the admin queue.
 
-**Demo limits.** Video bytes are kept in the serving instance's memory (`src/lib/media-store.ts`), so an upload plays on that instance only and disappears on a cold start (other instances show the poster). Uploads are capped at 4 MB because Vercel functions accept about 4.5 MB request bodies. The six demo ads in `public/samples/` are slow-zoom clips made from the products' openly licensed photos (see `/credits`).
+**Demo limits.** Video bytes are kept in the serving instance's memory (`src/lib/media-store.ts`), so an upload plays on that instance only and disappears on a cold start (other instances show the poster). Uploads are capped at 4 MB because Vercel functions accept about 4.5 MB request bodies. The 16 demo ads in `public/samples/` are short clips (wide shot, close-up, end card) made from the products' openly licensed photos (see `/credits`). They never show a price: the app shows the live one.
 
 **Shared, durable uploads (Supabase Storage):**
 1. Create a private bucket `ad-videos` (and `ad-posters`), with RLS so only the owning seller can write under `sellers/<seller_id>/…`.
