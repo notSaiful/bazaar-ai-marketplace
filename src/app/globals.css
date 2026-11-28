@@ -114,3 +114,10 @@ h1, h2, h3 { letter-spacing: -0.035em; }
 
 .no-scrollbar{scrollbar-width:none}
 .no-scrollbar::-webkit-scrollbar{display:none}
+
+/* Compare tray: just above the phone tab bar, lifted again while the sticky "Add to cart" bar is showing. */
+.compare-tray { bottom: calc(4.4rem + env(safe-area-inset-bottom)); }
+body:has([data-sticky-buy][aria-hidden="false"]) .compare-tray { bottom: calc(8.4rem + env(safe-area-inset-bottom)); }
+@media (min-width: 768px) {
+  .compare-tray, body:has([data-sticky-buy][aria-hidden="false"]) .compare-tray { bottom: 1.25rem; }
+}

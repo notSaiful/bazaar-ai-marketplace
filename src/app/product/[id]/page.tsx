@@ -3,6 +3,7 @@ import { ZoomableImage } from "@/components/zoomable-image";
 import { StickyBuyBar } from "@/components/sticky-buy-bar";
 import { RecentlyViewed, RecordView } from "@/components/recently-viewed";
 import { ShareButton } from "@/components/share-button";
+import { CompareButton } from "@/components/compare";
 import { notFound } from "next/navigation";
 import { getProduct, getSeller, isVisible, publicReviews } from "@/lib/store";
 import { accountName, getSession } from "@/lib/session";
@@ -48,7 +49,7 @@ export default async function ProductPage({ params }: { params: P }) {
   const statusLabel = hi && DICT[`status.${p.status}`] ? t(`status.${p.status}`, L) : p.status;
   return (
     <div className="space-y-16">
-    <div className="grid gap-10 md:grid-cols-2">
+    <div data-fly-root className="grid gap-10 md:grid-cols-2">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ld }} />
       <figure>
         <div className="relative overflow-hidden rounded-xl bg-surface2"><ZoomableImage src={artUrl(p)} title={hi ? p.titleHi : p.title} /><ProductArt src={artUrl(p)} alt={p.title} eager sizes="(min-width: 1280px) 580px, (min-width: 768px) 45vw, 100vw" className="aspect-square" /></div>
@@ -75,7 +76,10 @@ export default async function ProductPage({ params }: { params: P }) {
           <AddToCart id={p.id} stock={p.stock} className="h-12 flex-1" />
           <ShareButton path={`/product/${p.id}`} title={hi ? p.titleHi : p.title} />
         </div>
-        <p className="text-sm text-muted">{t("shop.product.delivery", L, { city: seller.city })}</p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <p className="pt-2 text-sm text-muted">{t("shop.product.delivery", L, { city: seller.city })}</p>
+          {s.role === "customer" && <CompareButton item={{ id: p.id, title: p.title, titleHi: p.titleHi, image: artUrl(p) }} />}
+        </div>
         <section className="space-y-2 border-t border-line pt-6"><p className="leading-relaxed" lang={hi ? "hi" : undefined}>{hi ? p.descriptionHi : p.description}</p><p className="text-sm leading-relaxed text-muted" lang={hi ? "en" : "hi"}>{hi ? p.description : p.descriptionHi}</p></section>
         <details className="border-t border-line pt-4 text-sm"><summary className="cursor-pointer text-muted hover:text-fg">{t("shop.product.details", L)}</summary>
           <dl className="mt-3 grid grid-cols-2 gap-3">{Object.entries(p.attributes).map(([k, v]) => <div key={k}><dt className="text-xs text-muted">{k}</dt><dd>{v}</dd></div>)}</dl>

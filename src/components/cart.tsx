@@ -1,11 +1,12 @@
 "use client";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type MouseEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
+import { Bookmark, Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import { btn, ProductArt, EmptyState, Skeleton } from "./ui";
 import { formatINR } from "@/lib/money";
 import { artUrl, cn } from "@/lib/utils";
 import type { CartLine } from "@/lib/types";
+import { savedList } from "@/lib/shopping-lists";
 import { useLang, useT } from "./lang";
 
 const ETA_HI = new Intl.DateTimeFormat("hi-IN-u-nu-latn", { weekday: "short", day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
@@ -63,7 +64,11 @@ export interface PricedCartDTO {
 }
 
 export function usePricedCart() {
-  const { lines } = useCart();
+  return usePriced(useCart().lines);
+}
+
+/** Live prices and details for any list of lines, from the server's pricing endpoint (prices are never stored in the browser). */
+function usePriced(lines: CartLine[]) {
   const [data, setData] = useState<PricedCartDTO | null>(null);
   const key = JSON.stringify(lines);
   useEffect(() => {
@@ -83,9 +88,14 @@ export function CartLines({ compact = false }: { compact?: boolean }) {
   const t = useT();
   const lang = useLang();
   if (!data) return <div className="space-y-3"><Skeleton className="h-20" /><Skeleton className="h-20" /></div>;
-  if (!lines.length || !data.groups.length) return <EmptyState emoji="🛍️" title={t("checkout.cart.empty")} hint={t("checkout.cart.emptyHint")} action={<Link href="/search" className={btn("primary")}>{t("checkout.browse")}</Link>} />;
-  // The pricing API returns titleHi when available; fall back to the English title.
-  const title = (p: { title: string; titleHi?: string }) => (lang === "hi" && p.titleHi ? p.titleHi : p.title);
+  if (!lines.length || !data.groups.length) return (
+    <div className="space-y-6">
+      <EmptyState emoji="🛍️" title={t("checkout.cart.empty")} hint={t("checkout.cart.emptyHint")} action={<Link href="/search" className={btn("primary")}>{t("checkout.browse")}</Link>} />
+      <SavedForLater compact={compact} />
+    </div>
+  );
+  const title = titleIn(lang);
+  const saveForLater = (id: string) => { savedList.add(id); remove(id); };
   return (
     <div className="space-y-5">
       {data.issues.map((i) => <p key={i} className="rounded-lg bg-warn/15 px-3 py-2 text-sm text-warn">{i}</p>)}
@@ -110,16 +120,60 @@ export function CartLines({ compact = false }: { compact?: boolean }) {
                       <button aria-label={t("checkout.cart.increase")} className="grid size-8 place-items-center hover:bg-surface2 disabled:opacity-40" disabled={l.qty >= l.product.stock} onClick={() => setQty(l.product.id, l.qty + 1)}><Plus className="size-3.5" /></button>
                     </div>
                     <button aria-label={t("checkout.cart.remove", { title: title(l.product) })} className="grid size-8 place-items-center rounded-lg text-muted hover:bg-surface2 hover:text-bad" onClick={() => remove(l.product.id)}><Trash2 className="size-4" /></button>
+                    <button type="button" aria-label={t("browse.saved.saveLabel", { title: title(l.product) })} className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-medium text-muted hover:bg-surface2 hover:text-fg" onClick={() => saveForLater(l.product.id)}>
+                      <Bookmark className="size-3.5" aria-hidden />{t("browse.saved.save")}
+                    </button>
                   </div>
                 </div>
                 <div className="text-sm font-semibold tabular-nums">{formatINR(l.lineTotal)}</div>
               </li>
             ))}
           </ul>
-          
         </section>
       ))}
+      <SavedForLater compact={compact} />
     </div>
+  );
+}
+
+/** The pricing API returns titleHi when available; fall back to the English title. */
+const titleIn = (lang: string) => (p: { title: string; titleHi?: string }) => (lang === "hi" && p.titleHi ? p.titleHi : p.title);
+
+/**
+ * Items moved out of the cart with "Save for later". Only ids live in the browser; titles, photos, prices
+ * and stock come from the pricing endpoint each time, so nothing shown here can be stale.
+ */
+function SavedForLater({ compact }: { compact?: boolean }) {
+  const ids = savedList.use();
+  const { add } = useCart();
+  const t = useT();
+  const title = titleIn(useLang());
+  const lines = useMemo(() => ids.map((productId) => ({ productId, qty: 1 })), [ids]);
+  const data = usePriced(lines);
+  if (!ids.length) return null;
+  // Keep the saved order; products that are gone (removed or hidden) simply drop out of the list.
+  const byId = new Map((data?.groups ?? []).flatMap((g) => g.lines.map((l) => [l.product.id, l.product] as const)));
+  const items = ids.flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []));
+  const move = (id: string) => { add(id, 1, { open: false }); savedList.remove(id); };
+  return (
+    <section aria-labelledby="saved-title" className="space-y-2 border-t border-line pt-5">
+      <h3 id="saved-title" className="text-sm font-semibold">{t("browse.saved.title", { n: ids.length })}</h3>
+      {!data ? <Skeleton className="h-16" /> : (
+        <ul className="divide-y divide-line rounded-xl border border-line">
+          {items.map((p) => (
+            <li key={p.id} className="flex items-center gap-3 p-3">
+              <div className={cn("shrink-0 overflow-hidden rounded-lg", compact ? "size-12" : "size-16")}><ProductArt src={artUrl(p)} alt="" sizes="64px" /></div>
+              <div className="min-w-0 flex-1">
+                <Link href={`/product/${p.id}`} className="line-clamp-1 text-sm font-medium hover:underline">{title(p)}</Link>
+                <div className="text-sm tabular-nums text-muted">{formatINR(p.price)}{p.stock < 1 && <span className="text-bad"> · {t("out_of_stock")}</span>}</div>
+              </div>
+              <button type="button" disabled={p.stock < 1} aria-label={t("browse.saved.moveLabel", { title: title(p) })} onClick={() => move(p.id)} className={cn(btn("outline", "sm"), "shrink-0")}>{t("browse.saved.move")}</button>
+              <button type="button" aria-label={t("browse.saved.removeLabel", { title: title(p) })} onClick={() => savedList.remove(p.id)} className="grid size-8 shrink-0 place-items-center rounded-lg text-muted hover:bg-surface2 hover:text-bad"><Trash2 className="size-4" /></button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
@@ -127,7 +181,7 @@ export function CartButton() {
   const { count, setOpen } = useCart();
   const t = useT();
   return (
-    <button onClick={() => setOpen(true)} aria-label={t("checkout.cart.open", { n: count })} className="relative grid size-9 place-items-center rounded-lg border border-line bg-surface transition hover:bg-surface2">
+    <button data-cart-target onClick={() => setOpen(true)} aria-label={t("checkout.cart.open", { n: count })} className="relative grid size-9 place-items-center rounded-lg border border-line bg-surface transition hover:bg-surface2">
       <ShoppingBag className="size-5" />
       {count > 0 && <span className="absolute -right-1.5 -top-1.5 grid min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-bold text-accent-fg">{count}</span>}
     </button>
@@ -169,12 +223,58 @@ export function CartDrawer() {
   );
 }
 
+/**
+ * Fly-to-cart: a copy of the product photo arcs from `from` into the visible cart icon (header on
+ * desktop, tab bar on phones), the icon gives a little bump, then `done` runs. Skipped (done runs at
+ * once) when the user prefers reduced motion or there is no photo or visible cart icon.
+ */
+function flyToCart(from: Element | null, done: () => void) {
+  const img = from?.querySelector("img");
+  const target = [...document.querySelectorAll<HTMLElement>("[data-cart-target]")].find((el) => el.getBoundingClientRect().width > 0);
+  const a = img?.getBoundingClientRect();
+  if (!img || !a?.width || !target || typeof img.animate !== "function" || matchMedia("(prefers-reduced-motion: reduce)").matches) return done();
+  const b = target.getBoundingClientRect();
+  const size = Math.min(a.width, a.height, 140);
+  const ghost = document.createElement("img");
+  ghost.src = img.currentSrc || img.src;
+  ghost.alt = "";
+  ghost.setAttribute("aria-hidden", "true");
+  Object.assign(ghost.style, { position: "fixed", left: `${a.left + a.width / 2 - size / 2}px`, top: `${a.top + a.height / 2 - size / 2}px`, width: `${size}px`, height: `${size}px`, objectFit: "cover", borderRadius: "16px", zIndex: "90", pointerEvents: "none", boxShadow: "0 12px 32px rgb(0 0 0 / .28)" });
+  document.body.appendChild(ghost);
+  const dx = b.left + b.width / 2 - (a.left + a.width / 2);
+  const dy = b.top + b.height / 2 - (a.top + a.height / 2);
+  const lift = Math.min(120, Math.abs(dx) * 0.25 + 40); // rise a little first so the path reads as an arc
+  const fly = ghost.animate(
+    [
+      { transform: "translate(0, 0) scale(1)", opacity: 1 },
+      { transform: `translate(${dx * 0.35}px, ${Math.min(0, dy) * 0.35 - lift}px) scale(.55)`, opacity: 1, offset: 0.4 },
+      { transform: `translate(${dx}px, ${dy}px) scale(.12)`, opacity: 0.4 },
+    ],
+    { duration: 620, easing: "cubic-bezier(.45,0,.55,1)" },
+  );
+  let finished = false;
+  const end = () => {
+    if (finished) return;
+    finished = true;
+    ghost.remove();
+    target.animate([{ transform: "scale(1)" }, { transform: "scale(1.22)" }, { transform: "scale(1)" }], { duration: 320, easing: "ease-out" });
+    done();
+  };
+  fly.onfinish = end;
+  fly.oncancel = end;
+  setTimeout(end, 900); // safety net if the animation never reports back (e.g. tab hidden)
+}
+
 export function AddToCart({ id, stock, className, label, compact }: { id: string; stock: number; className?: string; label?: string; compact?: boolean }) {
-  const { add } = useCart();
+  const { add, setOpen } = useCart();
   const t = useT();
-  // One tap adds the item and opens the cart with a Checkout button.
+  // One tap adds the item, flies its photo into the cart icon, then opens the cart with a Checkout button.
+  const onAdd = (e: MouseEvent<HTMLButtonElement>) => {
+    add(id, 1, { open: false });
+    flyToCart(e.currentTarget.closest("[data-fly-root], article, [role=dialog]"), () => setOpen(true));
+  };
   return (
-    <button disabled={stock < 1} onClick={() => add(id)} aria-label={compact ? t("checkout.cart.addToCart") : undefined} className={cn(btn(compact ? "outline" : "primary", compact ? "sm" : "md"), compact && "h-11 px-4 sm:h-8 sm:px-3", className)}>
+    <button disabled={stock < 1} onClick={onAdd} aria-label={compact ? t("checkout.cart.addToCart") : undefined} className={cn(btn(compact ? "outline" : "primary", compact ? "sm" : "md"), compact && "h-11 px-4 sm:h-8 sm:px-3", className)}>
       {compact ? (stock < 1 ? t("checkout.cart.soldOut") : t("checkout.cart.add")) : stock < 1 ? t("checkout.cart.outOfStock") : (label ?? t("checkout.cart.addToCart"))}
     </button>
   );

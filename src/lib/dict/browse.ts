@@ -1,6 +1,6 @@
 import type { Dict } from "../i18n-core";
 
-/** Recently viewed, photo zoom, quick view, recent/trending searches. */
+/** Recently viewed, photo zoom, quick view, recent/trending searches, compare, save for later. */
 export const browse: Dict = {
   "browse.recent.title": { en: "Recently viewed", hi: "हाल ही में देखे गए" },
   "browse.recent.clear": { en: "Clear", hi: "हटाएँ" },
@@ -15,4 +15,37 @@ export const browse: Dict = {
   "browse.search.trending": { en: "Trending", hi: "ट्रेंडिंग" },
   "browse.search.clear": { en: "Clear all", hi: "सब हटाएँ" },
   "browse.search.remove": { en: "Remove {q}", hi: "{q} हटाएँ" },
+
+  // Compare products
+  "browse.compare.add": { en: "Add to compare", hi: "तुलना में जोड़ें" },
+  "browse.compare.added": { en: "Added to compare", hi: "तुलना में जोड़ा गया" },
+  "browse.compare.removeLabel": { en: "Remove {title} from compare", hi: "{title} को तुलना से हटाएँ" },
+  "browse.compare.full": { en: "You can compare up to 3 products. Remove one first.", hi: "आप 3 उत्पादों तक की तुलना कर सकते हैं। पहले एक हटाएँ।" },
+  "browse.compare.tray": { en: "Products to compare", hi: "तुलना के लिए उत्पाद" },
+  "browse.compare.go": { en: "Compare ({n})", hi: "तुलना करें ({n})" },
+  "browse.compare.clear": { en: "Clear compare list", hi: "तुलना सूची खाली करें" },
+  "browse.compare.title": { en: "Compare products", hi: "उत्पादों की तुलना" },
+  "browse.compare.sub": { en: "Up to 3 products side by side. Prices and stock are live.", hi: "3 उत्पाद तक साथ-साथ। कीमत और स्टॉक लाइव हैं।" },
+  "browse.compare.empty": { en: "Nothing to compare yet", hi: "अभी तुलना के लिए कुछ नहीं है" },
+  "browse.compare.emptyHint": { en: "Open any product and tap “Add to compare”.", hi: "कोई भी उत्पाद खोलें और “तुलना में जोड़ें” दबाएँ।" },
+  "browse.compare.addMore": { en: "Add one more product to compare it side by side.", hi: "साथ-साथ तुलना के लिए एक और उत्पाद जोड़ें।" },
+  "browse.compare.product": { en: "Product", hi: "उत्पाद" },
+  "browse.compare.price": { en: "Price", hi: "कीमत" },
+  "browse.compare.rating": { en: "Rating", hi: "रेटिंग" },
+  "browse.compare.ratings": { en: "{n} ratings", hi: "{n} रेटिंग" },
+  "browse.compare.seller": { en: "Seller", hi: "विक्रेता" },
+  "browse.compare.shipsFrom": { en: "Ships from", hi: "यहाँ से भेजा जाता है" },
+  "browse.compare.stock": { en: "Availability", hi: "उपलब्धता" },
+  "browse.compare.lowest": { en: "Lowest price", hi: "सबसे कम कीमत" },
+  "browse.compare.topRated": { en: "Top rated", hi: "सबसे अच्छी रेटिंग" },
+  "browse.compare.remove": { en: "Remove", hi: "हटाएँ" },
+  "browse.compare.browse": { en: "Browse products", hi: "उत्पाद देखें" },
+
+  // Save for later (cart)
+  "browse.saved.save": { en: "Save for later", hi: "बाद के लिए रखें" },
+  "browse.saved.saveLabel": { en: "Save {title} for later", hi: "{title} को बाद के लिए रखें" },
+  "browse.saved.title": { en: "Saved for later ({n})", hi: "बाद के लिए रखा गया ({n})" },
+  "browse.saved.move": { en: "Move to cart", hi: "कार्ट में डालें" },
+  "browse.saved.moveLabel": { en: "Move {title} to cart", hi: "{title} को कार्ट में डालें" },
+  "browse.saved.removeLabel": { en: "Remove {title} from saved items", hi: "{title} को रखे गए सामान से हटाएँ" },
 };

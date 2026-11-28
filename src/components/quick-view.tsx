@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Eye, Loader2, Star, X } from "lucide-react";
 import { useLang, useT } from "./lang";
 import { AddToCart } from "./cart";
+import { CompareButton } from "./compare";
 import { ProductArt } from "./ui";
 
 interface Detail { title: string; title_hi?: string; price_display: string; stock: number; seller?: string; description: string; attributes: Record<string, string> }
@@ -83,6 +84,7 @@ export function QuickViewButton({ id, image, title, rating }: { id: string; imag
                   )}
                   <div className="mt-auto flex flex-col gap-2 pt-2">
                     <AddToCart id={id} stock={d.stock} className="h-11 w-full" />
+                    <CompareButton item={{ id, title: d.title, titleHi: d.title_hi ?? "", image }} className="[&>button]:w-full [&>button]:justify-center" />
                     <Link href={`/product/${id}`} onClick={() => setOpen(false)} className="text-center text-sm font-medium underline-offset-4 hover:underline">{t("browse.quick.details")}</Link>
                   </div>
                 </>

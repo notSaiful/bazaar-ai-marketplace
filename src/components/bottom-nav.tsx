@@ -30,7 +30,7 @@ export function BottomNav() {
             {label}
           </Link>
         ))}
-        <button onClick={() => setOpen(true)} aria-label={t("shop.nav.openCart", { n: count })} className={cn(tab, dark ? "text-white/60" : "text-muted")}>
+        <button data-cart-target onClick={() => setOpen(true)} aria-label={t("shop.nav.openCart", { n: count })} className={cn(tab, dark ? "text-white/60" : "text-muted")}>
           <span className="relative">
             <ShoppingBag className="size-5" />
             {count > 0 && <span className="absolute -right-2.5 -top-2 grid min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-bold text-accent-fg">{count}</span>}

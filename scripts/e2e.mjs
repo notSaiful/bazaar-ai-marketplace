@@ -348,15 +348,75 @@ ok("mobile: Add button is >=44px tall", box.height >= 43.5, `h=${box?.height}`);
   await dc.close();
 }
 
+/* 6g. Fly-to-cart, save for later, compare */
+{
+  const gc = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const gp = await gc.newPage();
+  gp.on("pageerror", (e) => errors.push("6g pageerror: " + e.message));
+  await gp.goto(A + "/search?q=diya");
+  await gp.locator("article", { hasText: "Brass Diya Set of 6" }).getByRole("button", { name: "Add to cart" }).click();
+  const flew = await gp.waitForFunction(() => [...document.querySelectorAll("body > img[aria-hidden=true]")].some((i) => i.style.position === "fixed"), null, { timeout: 1500 }).then(() => true).catch(() => false);
+  const gd = gp.getByRole("dialog", { name: "Shopping cart" });
+  await gd.getByText("Brass Diya Set of 6").first().waitFor({ timeout: 8000 }).catch(() => {});
+  ok("fly-to-cart: the photo flies to the cart icon, then the cart opens", flew && (await gd.isVisible()) && (await gp.locator("body > img[aria-hidden=true]").count()) === 0);
+
+  await gd.getByRole("button", { name: "Save Brass Diya Set of 6 for later" }).click();
+  const savedSec = gd.locator("section[aria-labelledby='saved-title']");
+  await savedSec.getByText("Brass Diya Set of 6").waitFor({ timeout: 8000 }).catch(() => {});
+  ok("save for later: the item leaves the cart and shows under Saved for later", (await gd.getByText("Your cart is empty").isVisible()) && /Saved for later \(1\)/.test(await savedSec.innerText().catch(() => "")));
+  await savedSec.getByRole("button", { name: "Move Brass Diya Set of 6 to cart" }).click();
+  await gd.getByRole("button", { name: "Save Brass Diya Set of 6 for later" }).waitFor({ timeout: 8000 }).catch(() => {});
+  ok("save for later: Move to cart puts it back", (await gd.getByRole("button", { name: "Save Brass Diya Set of 6 for later" }).isVisible()) && (await savedSec.count()) === 0);
+  await gd.getByRole("button", { name: "Save Brass Diya Set of 6 for later" }).click();
+  await gp.goto(A + "/cart");
+  const savedPage = gp.locator("main section[aria-labelledby='saved-title']");
+  await savedPage.getByText("Brass Diya Set of 6").waitFor({ timeout: 8000 }).catch(() => {});
+  ok("save for later: kept after reloading (cart page)", await savedPage.getByText("Brass Diya Set of 6").isVisible().catch(() => false));
+
+  for (const id of ["p_09", "p_18", "p_20"]) {
+    await gp.goto(A + `/product/${id}`);
+    await gp.getByRole("button", { name: "Add to compare" }).click();
+  }
+  const tray = gp.getByRole("region", { name: "Products to compare" });
+  ok("compare: product pages add to the tray (3 max)", await tray.getByRole("link", { name: "Compare (3)" }).isVisible());
+  await gp.goto(A + "/product/p_08");
+  await gp.getByRole("button", { name: "Add to compare" }).click();
+  ok("compare: a 4th product explains the limit", await gp.getByRole("status").filter({ hasText: "up to 3 products" }).isVisible());
+  await tray.getByRole("link", { name: "Compare (3)" }).click();
+  await gp.waitForURL(/\/compare\?ids=/, { timeout: 10000 });
+  const table = gp.locator("main table");
+  const cols = await table.locator("thead th[scope=col]").count();
+  const tableText = await table.innerText();
+  ok("compare: page shows 3 products side by side with price, rating, seller and stock", cols === 4 && /Price/.test(tableText) && /Rating/.test(tableText) && /Ships from/.test(tableText) && /Lowest price/.test(tableText), `cols=${cols}`);
+  ok("compare: tray is hidden on the compare page", !(await tray.isVisible().catch(() => false)));
+  await table.getByRole("button", { name: /^Remove .* from compare$/ }).first().click();
+  await gp.waitForFunction(() => document.querySelectorAll("main table thead th[scope=col]").length === 3, null, { timeout: 8000 }).catch(() => {});
+  ok("compare: Remove drops a product (URL and table)", (new URL(gp.url()).searchParams.get("ids") ?? "").split(",").length === 2 && (await table.locator("thead th[scope=col]").count()) === 3, gp.url().replace(A, ""));
+  await gp.goto(A + "/compare");
+  await gp.waitForURL(/\/compare\?ids=/, { timeout: 8000 }).catch(() => {});
+  ok("compare: /compare without ids shows this browser's list", /ids=p_/.test(gp.url()));
+  await gc.close();
+
+  // Phone: tray sits above the tab bar
+  const mc = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const mpg = await mc.newPage();
+  await mpg.goto(A + "/product/p_09");
+  await mpg.getByRole("button", { name: "Add to compare" }).click();
+  const tb = await mpg.getByRole("region", { name: "Products to compare" }).boundingBox();
+  const nb = await mpg.getByRole("navigation", { name: "Tabs" }).boundingBox();
+  ok("compare (phone): tray floats above the tab bar, inside the screen", !!tb && !!nb && tb.y + tb.height <= nb.y && tb.x >= 0 && tb.x + tb.width <= 390, JSON.stringify(tb));
+  await mc.close();
+}
+
 /* 6e. No raw translation keys on screen (English and Hindi) */
 {
   const kc = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const kp = await kc.newPage();
-  const RAW = /\b(in_stock|low_stock|out_of_stock|search_ph|add_to_cart)\b|\b(shop|checkout|samples|nav|seller|tour|share|ai|role|status|action|error|loading|brand|lang|theme|account|msg)\.[a-zA-Z_]{2,}/;
+  const RAW = /\b(in_stock|low_stock|out_of_stock|search_ph|add_to_cart)\b|\b(shop|checkout|samples|browse|nav|seller|tour|share|ai|role|status|action|error|loading|brand|lang|theme|account|msg)\.[a-zA-Z_]{2,}/;
   const hits = [];
   for (const lang of ["en", "hi"]) {
     await kc.request.post(A + `/api/role?role=customer&lang=${lang}`);
-    for (const path of ["/", "/search", "/product/p_09", "/product/p_23", "/samples", "/wishlist", "/account", "/orders", "/credits"]) {
+    for (const path of ["/", "/search", "/product/p_09", "/product/p_23", "/samples", "/wishlist", "/account", "/orders", "/credits", "/cart", "/compare?ids=p_09,p_18"]) {
       await kp.goto(A + path);
       const txt = await kp.locator("body").innerText();
       const m = RAW.exec(txt.replace(/https?:\/\/\S+/g, ""));

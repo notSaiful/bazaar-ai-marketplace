@@ -15,6 +15,7 @@ import { sideNavData } from "@/lib/nav";
 import { getWishlistIds } from "@/lib/wishlist";
 import { WishlistProvider } from "@/components/wishlist";
 import { BottomNav } from "@/components/bottom-nav";
+import { CompareTray } from "@/components/compare";
 import { GuidedTour, TourStartButton } from "@/components/guided-tour";
 import { Suspense } from "react";
 import { LangProvider } from "@/components/lang";
@@ -73,6 +74,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </div>
           {shop && <AssistantBoundary><AssistantLazy aiLive={aiEnabled()} /></AssistantBoundary>}
           {shop && <BottomNav />}
+          {shop && <CompareTray />}
           {shop && <GuidedTour />}
           <CartDrawer />
           <RevealObserver />
