@@ -65,9 +65,13 @@ export function GuidedTour() {
 
   // Auto-start once on the home page; ?tour=1 forces it; the footer link fires "start-tour".
   useEffect(() => {
-    const onStart = () => start();
+    // The footer button sets this flag too, in case it is clicked before this (deferred) component loads.
+    const w = window as Window & { __bzTourRequested?: boolean };
+    const onStart = () => { w.__bzTourRequested = false; start(); };
     window.addEventListener("start-tour", onStart);
-    const forced = new URLSearchParams(window.location.search).get("tour") === "1";
+    const requested = !!w.__bzTourRequested;
+    w.__bzTourRequested = false;
+    const forced = requested || new URLSearchParams(window.location.search).get("tour") === "1";
     let seen = false;
     try { seen = localStorage.getItem(DONE_KEY) === "1"; } catch {}
     const auto = !forced && path === "/" && !seen && !navigator.webdriver;
@@ -134,8 +138,3 @@ export function GuidedTour() {
   );
 }
 
-/** Footer link that replays the tour. */
-export function TourStartButton() {
-  const t = useT();
-  return <button type="button" onClick={() => window.dispatchEvent(new Event("start-tour"))} className="text-left hover:text-muted">{t("tour.start")}</button>;
-}

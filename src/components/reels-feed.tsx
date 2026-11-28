@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent } from "react";
 import { Check, ChevronDown, ChevronUp, Heart, Pause, Play, ShoppingBag, Star, Store, Volume2, VolumeX } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAfterLoad } from "@/lib/use-after-load";
 import { useT } from "./lang";
 import { HeartButton, useWishlist } from "./wishlist";
 import { AddToCart, useCart } from "./cart";
@@ -20,17 +21,20 @@ export interface FeedItem {
 }
 export interface FeedCategory { slug: string; name: string }
 
-const noop = () => () => {};
 const RM = "(prefers-reduced-motion: reduce)";
 const subscribeRM = (cb: () => void) => { const m = matchMedia(RM); m.addEventListener("change", cb); return () => m.removeEventListener("change", cb); };
+const MD = "(min-width: 768px)";
+const subscribeMD = (cb: () => void) => { const m = matchMedia(MD); m.addEventListener("change", cb); return () => m.removeEventListener("change", cb); };
 const DOUBLE_TAP_MS = 280;
 // Light round buttons on top of the video: a 44px touch target that covers as little of the picture as possible.
-const fab = "grid size-11 place-items-center rounded-full bg-black/30 text-white backdrop-blur-sm transition hover:bg-black/45 active:scale-95";
+const fab = "grid size-11 place-items-center rounded-full bg-black/40 text-white transition hover:bg-black/55 active:scale-95";
 
 /**
- * Vertical, one-ad-per-screen feed (scroll snap). Only the ad on screen and the next one get a <video>
- * element; everything else is a poster image, so nothing else downloads. Videos mount after hydration so
- * the first poster is what the browser paints first (Lighthouse LCP).
+ * Vertical, one-ad-per-screen feed (scroll snap). Only the ad on screen and its neighbours are fully
+ * built; the ad on screen and the next one get a <video>, and only once the page has loaded and the main
+ * thread is idle, so the first paint and the page's own start-up are not competing with video decoding.
+ * Playback progress is written straight to the DOM, so a playing video never re-renders the feed.
+ * Feed links use prefetch={false}: prefetching shop and product pages would compete with the first screen.
  * Category chips filter the feed; tap pauses, double-tap saves to the wishlist; on desktop a side panel
  * shows the product in the current ad.
  */
@@ -38,17 +42,20 @@ export function ReelsFeed({ items, categories }: { items: FeedItem[]; categories
   const t = useT();
   const box = useRef<HTMLDivElement>(null);
   const vids = useRef<Map<number, HTMLVideoElement>>(new Map());
-  const hydrated = useSyncExternalStore(noop, () => true, () => false);
   const reduced = useSyncExternalStore(subscribeRM, () => matchMedia(RM).matches, () => false);
+  // The side panel exists only on desktop; phones never build it.
+  const desktop = useSyncExternalStore(subscribeMD, () => matchMedia(MD).matches, () => false);
   const [cat, setCat] = useState("");
   const [active, setActive] = useState(0);
   const [muted, setMuted] = useState(true);
   /** null = default (autoplay unless reduced motion); true/false = the user's choice for this ad. */
   const [userPaused, setUserPaused] = useState<boolean | null>(null);
   const [blocked, setBlocked] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [missing, setMissing] = useState<Record<string, boolean>>({});
   const [expanded, setExpanded] = useState<string | null>(null);
+  const mediaReady = useAfterLoad();
+  const bar = useRef<HTMLDivElement | null>(null);
+  const showProgress = (p: number) => { if (bar.current) bar.current.style.transform = `scaleX(${Math.min(1, p)})`; };
   const [burst, setBurst] = useState<{ key: number; id: string; x: number; y: number } | null>(null);
   const [toast, setToast] = useState<{ kind: "cart" | "wish"; key: number } | null>(null);
   const { add, setOpen: openCart } = useCart();
@@ -71,7 +78,6 @@ export function ReelsFeed({ items, categories }: { items: FeedItem[]; categories
     setActive(0);
     setUserPaused(null);
     setBlocked(false);
-    setProgress(0);
     setExpanded(null);
     box.current?.scrollTo({ top: 0 });
   };
@@ -86,7 +92,7 @@ export function ReelsFeed({ items, categories }: { items: FeedItem[]; categories
           if (e.isIntersecting && e.intersectionRatio >= 0.6) {
             const i = Number((e.target as HTMLElement).dataset.i);
             setActive((cur) => {
-              if (cur !== i) { setUserPaused(null); setBlocked(false); setProgress(0); setExpanded(null); }
+              if (cur !== i) { setUserPaused(null); setBlocked(false); setExpanded(null); }
               return i;
             });
           }
@@ -102,13 +108,15 @@ export function ReelsFeed({ items, categories }: { items: FeedItem[]; categories
   // Only NotAllowedError means "autoplay blocked"; AbortError just means a play() was superseded (the
   // user scrolled on, or the video unmounted) and must not pause the ad that is now on screen.
   useEffect(() => {
+    // A new ad starts with an empty progress bar (bars are written directly, outside React).
+    box.current?.querySelectorAll<HTMLElement>("[data-bar]").forEach((b) => { if (b !== bar.current) b.style.transform = ""; });
     vids.current.forEach((v, i) => {
       v.muted = muted;
       if (i === active && !paused) {
         v.play().catch((e: unknown) => { if ((e as Error)?.name === "NotAllowedError") setBlocked(true); });
       } else v.pause();
     });
-  }, [active, paused, muted, hydrated, cat]);
+  }, [active, paused, muted, mediaReady, cat]);
 
   // Tap = play/pause, double-tap = save to wishlist with a heart burst. The single tap waits briefly so a
   // double-tap never also pauses. Keyboard activation (detail 0) toggles at once.
@@ -168,8 +176,8 @@ export function ReelsFeed({ items, categories }: { items: FeedItem[]; categories
                   aria-pressed={on}
                   onClick={() => pick(c.slug)}
                   className={cn(
-                    "h-8 shrink-0 rounded-full px-3.5 text-sm font-medium backdrop-blur-md transition",
-                    on ? "bg-white text-black md:bg-accent md:text-accent-fg" : "bg-white/15 text-white hover:bg-white/25 md:border md:border-line md:bg-surface md:text-fg md:backdrop-blur-none md:hover:bg-surface2",
+                    "h-8 shrink-0 rounded-full px-3.5 text-sm font-medium transition",
+                    on ? "bg-white text-black md:bg-accent md:text-accent-fg" : "bg-black/40 text-white hover:bg-black/55 md:border md:border-line md:bg-surface md:text-fg md:hover:bg-surface2",
                   )}
                 >
                   {c.name}
@@ -191,7 +199,22 @@ export function ReelsFeed({ items, categories }: { items: FeedItem[]; categories
           className="fixed inset-0 z-[35] snap-y snap-mandatory overflow-y-auto overscroll-y-contain bg-black text-white outline-none no-scrollbar md:static md:z-auto md:aspect-[9/16] md:h-[calc(100dvh-12rem)] md:max-h-[820px] md:shrink-0 md:rounded-2xl md:focus-visible:ring-4 md:focus-visible:ring-fg/20"
         >
           {shown.map((it, i) => {
-            const near = hydrated && (i === active || i === active + 1) && !missing[it.id];
+            const near = mediaReady && (i === active || i === active + 1) && !missing[it.id];
+            // Only the first ad's images load with the page; the next ad's poster and thumbnail wait for
+            // mediaReady, so nothing competes with the first screen.
+            const images = i === 0 || mediaReady;
+            // Far-away ads are just an empty, snap-able slide until the viewer gets close.
+            // Before mediaReady only the first screen is built; the next ad fills in right after load.
+            if (Math.abs(i - active) > 1 || (!mediaReady && i !== active)) {
+              return (
+                <section key={it.id} data-i={i} aria-roledescription="slide" aria-label={t("samples.slide", { i: i + 1, n: shown.length, shop: it.shop.name })} className="relative h-full w-full snap-start snap-always overflow-hidden bg-black">
+                  {i === active + 2 && mediaReady && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={it.poster} alt="" width={540} height={960} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
+                  )}
+                </section>
+              );
+            }
             const isActive = i === active;
             const open = expanded === it.id;
             return (
@@ -204,7 +227,7 @@ export function ReelsFeed({ items, categories }: { items: FeedItem[]; categories
               >
                 {/* Poster: always rendered underneath; the first one is the LCP image. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={it.poster} alt="" width={540} height={960} loading={i === 0 ? "eager" : "lazy"} fetchPriority={i === 0 ? "high" : undefined} decoding={i === 0 ? "sync" : "async"} className="absolute inset-0 h-full w-full object-cover" />
+                {images && <img src={it.poster} alt="" width={540} height={960} loading={i === 0 ? "eager" : "lazy"} fetchPriority={i === 0 ? "high" : undefined} decoding={i === 0 ? "sync" : "async"} className="absolute inset-0 h-full w-full object-cover" />}
                 {near && (
                   <video
                     ref={(el) => { if (el) vids.current.set(i, el); else vids.current.delete(i); }}
@@ -215,7 +238,7 @@ export function ReelsFeed({ items, categories }: { items: FeedItem[]; categories
                     playsInline
                     preload="auto"
                     aria-label={it.caption}
-                    onTimeUpdate={isActive ? (e) => setProgress(e.currentTarget.currentTime / (e.currentTarget.duration || it.durationSec)) : undefined}
+                    onTimeUpdate={isActive ? (e) => showProgress(e.currentTarget.currentTime / (e.currentTarget.duration || it.durationSec)) : undefined}
                     onError={() => setMissing((m) => ({ ...m, [it.id]: true }))}
                     className="absolute inset-0 h-full w-full object-cover"
                   />
@@ -232,13 +255,13 @@ export function ReelsFeed({ items, categories }: { items: FeedItem[]; categories
                   <Heart key={burst.key} aria-hidden className="heart-burst pointer-events-none absolute z-20 size-24 fill-white text-white drop-shadow-[0_4px_16px_rgb(0_0_0/0.45)]" style={{ left: burst.x - 48, top: burst.y - 48 }} />
                 )}
                 {isActive && paused && (
-                  <span className="pointer-events-none absolute left-1/2 top-1/2 z-20 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-black/45 backdrop-blur-sm" aria-hidden>
+                  <span className="pointer-events-none absolute left-1/2 top-1/2 z-20 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-black/50" aria-hidden>
                     <Play className="ml-1 size-7 fill-white" />
                   </span>
                 )}
                 {/* Progress */}
                 <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-0.5 bg-white/25" aria-hidden>
-                  <div className="h-full bg-white transition-[width] duration-200 ease-linear" style={{ width: isActive ? `${Math.min(100, progress * 100)}%` : "0%" }} />
+                  <div ref={isActive ? bar : undefined} data-bar className="h-full origin-left scale-x-0 bg-white transition-transform duration-200 ease-linear" />
                 </div>
                 {missing[it.id] && <p className="absolute inset-x-4 top-24 z-20 rounded-lg bg-black/60 px-3 py-2 text-xs">{t("samples.unavailable")}</p>}
 
@@ -247,7 +270,7 @@ export function ReelsFeed({ items, categories }: { items: FeedItem[]; categories
                 <div className="absolute inset-x-0 bottom-0 z-30 flex items-end gap-3 px-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-5">
                   <div className="min-w-0 flex-1 space-y-2.5">
                     <div className="flex items-center gap-2">
-                      <Link href={`/store/${it.shop.id}`} className="flex min-w-0 items-center gap-2 text-sm font-semibold [text-shadow:0_1px_2px_rgb(0_0_0/0.5)] hover:underline">
+                      <Link prefetch={false} href={`/store/${it.shop.id}`} className="flex min-w-0 items-center gap-2 text-sm font-semibold [text-shadow:0_1px_2px_rgb(0_0_0/0.5)] hover:underline">
                         <span className="grid size-7 shrink-0 place-items-center rounded-full border border-white/60 text-xs" style={{ background: `hsl(${it.shop.hue} 70% 90%)` }} aria-hidden>{it.shop.emoji}</span>
                         <span className="truncate">{it.shop.name}</span>
                       </Link>
@@ -262,8 +285,8 @@ export function ReelsFeed({ items, categories }: { items: FeedItem[]; categories
                       )}
                     </div>
                     {/* Phone: slim product bar (desktop shows the side panel instead). */}
-                    <Link href={`/product/${it.product.id}`} className="flex items-center gap-2.5 rounded-xl bg-black/35 p-1.5 pr-2 ring-1 ring-white/15 backdrop-blur-md transition hover:bg-black/45 md:hidden">
-                      <span className="size-10 shrink-0 overflow-hidden rounded-lg bg-white/10"><ProductArt src={it.product.image} alt="" sizes="40px" /></span>
+                    <Link prefetch={false} href={`/product/${it.product.id}`} className="flex items-center gap-2.5 rounded-xl bg-black/50 p-1.5 pr-2 ring-1 ring-white/15 transition hover:bg-black/60 md:hidden">
+                      <span className="size-10 shrink-0 overflow-hidden rounded-lg bg-white/10">{mediaReady && <ProductArt src={it.product.image} alt="" sizes="40px" />}</span>
                       <span className="min-w-0 flex-1">
                         <span className="line-clamp-2 text-[13px] font-medium leading-tight">{it.product.title}</span>
                         <span className="block text-xs tabular-nums text-white/80">{it.product.price}</span>
@@ -310,7 +333,7 @@ export function ReelsFeed({ items, categories }: { items: FeedItem[]; categories
           <button type="button" onClick={() => go(active + 1)} disabled={active >= shown.length - 1} aria-label={t("samples.next")} className="grid size-11 place-items-center rounded-full border border-line bg-surface transition hover:bg-surface2 disabled:opacity-40"><ChevronDown className="size-5" /></button>
         </div>
 
-        {current && <AdPanel key={current.id} it={current} />}
+        {current && (desktop ? <AdPanel key={current.id} it={current} /> : <div aria-hidden className="hidden w-80 shrink-0 md:block" />)}
       </div>
 
       {toast && (
@@ -335,21 +358,21 @@ function AdPanel({ it }: { it: FeedItem }) {
   const [stockText, stockTone] = p.stock < 1 ? [t("out_of_stock"), "text-bad"] : p.stock <= p.lowStock ? [t("low_stock", { n: p.stock }), "text-warn"] : [t("in_stock"), "text-ok"];
   return (
     <aside aria-label={t("samples.panel")} data-fly-root className="fade-in hidden w-80 shrink-0 flex-col gap-4 overflow-y-auto rounded-2xl border border-line bg-surface p-5 md:flex md:h-[calc(100dvh-12rem)] md:max-h-[820px]">
-      <Link href={`/store/${it.shop.id}`} className="flex items-center gap-2 text-sm hover:underline">
+      <Link prefetch={false} href={`/store/${it.shop.id}`} className="flex items-center gap-2 text-sm hover:underline">
         <span className="grid size-8 shrink-0 place-items-center rounded-full text-sm" style={{ background: `hsl(${it.shop.hue} 70% 90%)` }} aria-hidden>{it.shop.emoji}</span>
         <span className="min-w-0"><span className="block truncate font-semibold">{it.shop.name}</span><span className="block text-xs text-muted">{it.shop.city}</span></span>
       </Link>
-      <Link href={`/product/${p.id}`} className="block overflow-hidden rounded-xl bg-surface2"><ProductArt src={p.image} alt={p.title} sizes="280px" /></Link>
+      <Link prefetch={false} href={`/product/${p.id}`} className="block overflow-hidden rounded-xl bg-surface2"><ProductArt src={p.image} alt={p.title} sizes="280px" /></Link>
       <div>
-        <Link href={`/product/${p.id}`} className="text-lg font-semibold leading-snug tracking-tight hover:underline">{p.title}</Link>
+        <Link prefetch={false} href={`/product/${p.id}`} className="text-lg font-semibold leading-snug tracking-tight hover:underline">{p.title}</Link>
         {p.ratingCount > 0 && <p className="mt-1 flex items-center gap-1 text-sm text-muted"><Star className="size-3.5 fill-fg text-fg" aria-hidden /> <span className="font-medium text-fg">{p.rating.toFixed(1)}</span> · {t("samples.ratings", { n: p.ratingCount })}</p>}
       </div>
       <div className="flex items-baseline gap-3"><span className="text-2xl font-semibold tabular-nums">{p.price}</span><span className={cn("text-sm", stockTone)}>{stockText}</span></div>
       <p className="line-clamp-4 text-sm leading-relaxed text-muted">{p.description}</p>
       <div className="mt-auto space-y-2 pt-1">
         <AddToCart id={p.id} stock={p.stock} className="h-11 w-full" />
-        <Link href={`/product/${p.id}`} className={cn(btn("outline", "md"), "h-10 w-full")}>{t("samples.viewProduct")}</Link>
-        <Link href={`/store/${it.shop.id}`} className="flex items-center justify-center gap-1.5 pt-1 text-sm text-muted transition hover:text-fg"><Store className="size-4" aria-hidden />{t("samples.moreFromShop", { shop: it.shop.name })}</Link>
+        <Link prefetch={false} href={`/product/${p.id}`} className={cn(btn("outline", "md"), "h-10 w-full")}>{t("samples.viewProduct")}</Link>
+        <Link prefetch={false} href={`/store/${it.shop.id}`} className="flex items-center justify-center gap-1.5 pt-1 text-sm text-muted transition hover:text-fg"><Store className="size-4" aria-hidden />{t("samples.moreFromShop", { shop: it.shop.name })}</Link>
       </div>
     </aside>
   );

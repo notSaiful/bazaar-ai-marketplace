@@ -326,7 +326,8 @@ ok("mobile: Add button is >=44px tall", box.height >= 43.5, `h=${box?.height}`);
   ok("tour: remembered as done", (await ep.evaluate(() => localStorage.getItem("bz_tour_done"))) === "1");
   await ep.goto(A + "/");
   await ep.getByRole("button", { name: "Take the tour" }).click();
-  ok("tour: footer link replays it", await ep.getByRole("dialog", { name: "Shop in Hindi" }).isVisible().catch(() => false));
+  // The tour loads after the page (deferred), so give it a moment.
+  ok("tour: footer link replays it", await ep.getByRole("dialog", { name: "Shop in Hindi" }).waitFor({ timeout: 6000 }).then(() => true).catch(() => false));
   await ec.close();
 }
 
@@ -421,7 +422,8 @@ ok("mobile: Add button is >=44px tall", box.height >= 43.5, `h=${box?.height}`);
     await gp.getByRole("button", { name: "Add to compare" }).click();
   }
   const tray = gp.getByRole("region", { name: "Products to compare" });
-  ok("compare: product pages add to the tray (3 max)", await tray.getByRole("link", { name: "Compare (3)" }).isVisible());
+  // The tray loads after the page (deferred), so wait for it.
+  ok("compare: product pages add to the tray (3 max)", await tray.getByRole("link", { name: "Compare (3)" }).waitFor({ timeout: 6000 }).then(() => true).catch(() => false));
   await gp.goto(A + "/product/p_08");
   await gp.getByRole("button", { name: "Add to compare" }).click();
   ok("compare: a 4th product explains the limit", await gp.getByRole("status").filter({ hasText: "up to 3 products" }).isVisible());

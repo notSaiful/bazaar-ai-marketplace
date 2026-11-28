@@ -9,14 +9,13 @@ import { AssistantBoundary } from "@/components/assistant-boundary";
 import { getSession } from "@/lib/session";
 import { LangToggle } from "@/components/lang-toggle";
 import { RevealObserver } from "@/components/reveal";
-import { LiveClock } from "@/components/live-clock";
 import { SideNav } from "@/components/side-nav";
 import { sideNavData } from "@/lib/nav";
 import { getWishlistIds } from "@/lib/wishlist";
 import { WishlistProvider } from "@/components/wishlist";
 import { BottomNav } from "@/components/bottom-nav";
-import { CompareTray } from "@/components/compare";
-import { GuidedTour, TourStartButton } from "@/components/guided-tour";
+import { DeferredClock, DeferredShopUI } from "@/components/deferred-ui";
+import { TourStartButton } from "@/components/tour-start-button";
 import { Suspense } from "react";
 import { LangProvider } from "@/components/lang";
 import { clientMessages, t } from "@/lib/i18n";
@@ -67,15 +66,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     {shop && <TourStartButton />}
                     <span className="text-muted"><LangToggle lang={s.lang} /></span>
                   </nav>
-                  <LiveClock />
+                  <DeferredClock />
                 </div>
               </footer>
             </div>
           </div>
           {shop && <AssistantBoundary><AssistantLazy aiLive={aiEnabled()} /></AssistantBoundary>}
           {shop && <BottomNav />}
-          {shop && <CompareTray />}
-          {shop && <GuidedTour />}
+          {shop && <DeferredShopUI />}
           <CartDrawer />
           <RevealObserver />
           </WishlistProvider>
