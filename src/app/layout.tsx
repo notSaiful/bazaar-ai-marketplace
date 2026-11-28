@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { LogoMark } from "@/components/logo";
 import "./globals.css";
 import { Header } from "@/components/header";
 import { CartProvider, CartDrawer } from "@/components/cart";
@@ -48,7 +49,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <footer className="border-t border-line">
                 <div className={`mx-auto grid w-full gap-8 ${shop ? "max-w-7xl" : "max-w-6xl"} px-4 py-10 sm:grid-cols-[1.4fr_1fr_1fr_auto] sm:px-8`}>
                   <div>
-                    <div className="text-sm font-semibold tracking-tight">Bazaar</div>
+                    <div className="flex items-center gap-2 text-sm font-semibold tracking-tight"><LogoMark className="size-6" />Bazaar</div>
                     <p className="mt-1 max-w-xs text-sm text-muted">{t("brand.tagline", s.lang)}</p>
                   </div>
                   <nav aria-label={t("nav.footer", s.lang)} className="flex flex-col gap-2 text-sm">

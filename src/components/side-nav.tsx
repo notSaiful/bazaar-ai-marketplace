@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { LogoMark } from "./logo";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
@@ -82,7 +83,7 @@ export function SideNavBody({ d, onNav }: { d: SideNavData; onNav?: () => void }
     <div className="flex h-full flex-col gap-6 overflow-y-auto px-3 py-4">
       {/* Brand / status card */}
       <Link href="/" onClick={onNav} className="flex items-center gap-3 rounded-[10px] border border-line bg-surface p-3 transition hover:bg-surface2">
-        <span className="grid size-10 place-items-center rounded-lg bg-accent text-base font-semibold text-accent-fg">B</span>
+        <LogoMark className="size-10" />
         <span className="min-w-0">
           <span className="block text-sm font-semibold tracking-tight">Bazaar</span>
           <span className="flex items-center gap-1.5 text-xs text-muted">

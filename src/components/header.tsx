@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LogoMark } from "./logo";
 import { Suspense } from "react";
 import { accountName, getSession } from "@/lib/session";
 import { db } from "@/lib/store";
@@ -23,7 +24,7 @@ export async function Header() {
       <div className="flex min-h-16 flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:px-6">
         {!shop && <Suspense><MobileNav d={sideNavData(s)} /></Suspense>}
         <Link href="/" className={`flex items-center gap-2 text-base font-semibold tracking-tight ${shop ? "" : "lg:hidden"}`}>
-          {shop && <span className="grid size-8 place-items-center rounded-lg bg-accent text-sm text-accent-fg" aria-hidden>B</span>}Bazaar
+          {shop && <LogoMark className="size-8" />}Bazaar
         </Link>
         {shop ? (
           <HeaderSearch placeholder={t("search_ph", s.lang)} />

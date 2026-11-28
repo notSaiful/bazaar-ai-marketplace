@@ -1,6 +1,6 @@
 # Eval & invariant report
 
-Generated 2026-11-26T05:26:00.222Z · 156 checks · **156 passed, 0 failed**
+Generated 2026-11-28T06:05:07.081Z · 156 checks · **156 passed, 0 failed**
 
 | Group | Passed | Total |
 |---|---|---|
@@ -84,7 +84,7 @@ All checks passed.
 - ✅ [search] golden: “achaar”
 - ✅ [search] golden: “kurtaa”
 - ✅ [search] golden hit-rate ≥ 90% (18/18)
-- ✅ [search] p95 latency < 150 ms (NFR-03) (p95=1.79ms)
+- ✅ [search] p95 latency < 150 ms (NFR-03) (p95=1.72ms)
 - ✅ [search] price filter parsed from “under 500”
 - ✅ [search] flagged listing never appears in search
 - ✅ [agent] price/stock/budget accuracy: “diwali gift 2000 tak maa ke liye”
@@ -127,7 +127,7 @@ All checks passed.
 - ✅ [listing] tiny/blank photo prompts a retake
 - ✅ [listing] draft has Hindi + English copy and a price hint, but no final price field
 - ✅ [persistence] replaying the mutation log on a fresh seed reproduces the exact state (18 logged actions)
-- ✅ [persistence] log fits the signed cookie budget (962 bytes in 1 cookie(s))
+- ✅ [persistence] log fits the signed cookie budget (961 bytes in 1 cookie(s))
 - ✅ [persistence] cookie round-trip returns the same log
 - ✅ [persistence] tampered cookie is rejected (ignored, never trusted)
 - ✅ [persistence] seed order ids are deterministic across cold starts (grp_seed_NN)
